@@ -1,76 +1,67 @@
 // mgps_factor_model.stan
-// Bhattacharya & Dunson (2011) Sparse Bayesian Infinite Factor Model
+// Sparse Bayesian infinite factor model (Bhattacharya & Dunson, 2011)
+// with multiplicative gamma process shrinkage (MGPS) on loadings.
 
 data {
-  int<lower=1> N;      // number of observations
-  int<lower=1> P;      // number of observed variables
-  int<lower=1> K;      // upper bound on number of factors (set large, e.g. 20)
-  matrix[N, P] Y;      // data matrix (centered and scaled)
+  int<lower=1> N;           // number of observations
+  int<lower=1> P;           // number of variables
+  int<lower=1> K;           // truncation level (choose large, e.g. 30)
+  matrix[N, P] Y;           // centered & scaled data matrix
 }
 
 parameters {
-  // Factor loadings
-  matrix[P, K] Lambda;
-  // Factor scores
-  matrix[N, K] eta;
-  // Residual precisions (psi)
-  vector<lower=0>[P] psi;
-  // Local shrinkage
-  matrix<lower=0>[P, K] phi;
-  // Multiplicative gamma process: delta (not tau!)
-  vector<lower=0>[K] delta;
+  matrix[P, K] Lambda;      // factor loadings
+  matrix[N, K]  eta;        // latent factor scores
+  vector<lower=0>[P] psi;   // residual precisions (1 / var)
+  matrix<lower=0>[P, K] phi;  // local shrinkage scales
+  vector<lower=0>[K] delta;   // gamma-process weights
 }
 
 transformed parameters {
-  // Compute tau as the cumulative product of delta
-  vector<lower=0>[K] tau;
-  matrix[P, K] lambda_sd;
+  vector<lower=0>[K] tau;   // global shrinkage for each factor index
+  matrix[P, K] lambda_sd;   // per‐loading SD = (phi * tau)^{-1/2}
+
   tau[1] = delta[1];
   for (k in 2:K)
-    tau[k] = tau[k-1] * delta[k];
-  for (k in 1:K) {
-    for (p in 1:P) {
+    tau[k] = tau[k - 1] * delta[k];
+
+  for (k in 1:K)
+    for (p in 1:P)
       lambda_sd[p, k] = sqrt(1.0 / (phi[p, k] * tau[k]));
-    }
-  }
 }
 
 model {
-  // --- Hyperparameters (use the paper's defaults) ---
-  real a1 = 2.1;
-  real a2 = 3.1;
-  real b1 = 1.0;
-  real b2 = 1.0;
-  real nu = 3.0;   // df for local shrinkage
-  real a_psi = 1.0; 
+  // ------------- Hyperparameters (paper defaults) -------------
+  real a_psi = 1.0;    // residual precision ~ Gamma(a_psi, b_psi)
   real b_psi = 0.3;
+  real nu    = 3.0;    // local shrinkage df
+  real a1    = 2.1;    // delta[1] ~ Gamma(a1, 1)
+  real b1    = 1.0;
+  real a2    = 3.1;    // delta[k>1] ~ Gamma(a2, 1)
+  real b2    = 1.0;
 
-  // --- Priors ---
-  psi ~ gamma(a_psi, b_psi);
+  // ------- Priors -------
+  psi  ~ gamma(a_psi, b_psi);
+  to_vector(phi) ~ gamma(nu / 2, nu / 2);
 
-  // Local shrinkage (phi)
-  to_vector(phi) ~ gamma(nu / 2.0, nu / 2.0);
-
-  // First delta
-  delta[1] ~ gamma(a1, b1);
-  // Remaining deltas
+  delta[1]      ~ gamma(a1, b1);
   for (k in 2:K)
-    delta[k] ~ gamma(a2, b2);
+    delta[k]    ~ gamma(a2, b2);
 
-  // Factor loadings
+  // Factor loadings with MGPS‐induced SDs
   for (p in 1:P)
     for (k in 1:K)
       Lambda[p, k] ~ normal(0, lambda_sd[p, k]);
 
   // Factor scores
-  for (n in 1:N)
-    eta[n] ~ normal(0, 1);
+  to_vector(eta) ~ normal(0, 1);
 
-  // --- Likelihood ---
-  for (n in 1:N) {
-    vector[P] mu = Lambda * eta[n]';
+  // ------- Likelihood -------
+  {
+    // vectorize over n and p for efficiency
+    matrix[N, P] mu = eta * Lambda'; 
     for (p in 1:P)
-      Y[n, p] ~ normal(mu[p], sqrt(1.0 / psi[p]));
+      Y[, p] ~ normal(mu[, p], sqrt(1.0 / psi[p]));
   }
 }
 
