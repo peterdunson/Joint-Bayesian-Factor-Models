@@ -4,8 +4,7 @@
 
 **Folders**
 
-**sparse_bayesian_infinite_factor_model**
-Includes code for “Sparse Bayesian Infinite Factor Models” (Bhattacharya & Dunson, 2011)
+**sparse_bayesian_infinite_factor_model** - Includes code for “Sparse Bayesian Infinite Factor Models” (Bhattacharya & Dunson, 2011)
 
 Files:
 
