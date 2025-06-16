@@ -9,22 +9,27 @@ library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
+# Only needed for Mac:
 Sys.setenv(SDKROOT = "/Library/Developer/CommandLineTools/SDKs/MacOSX15.5.sdk")
 
-# 1. Load & preprocess data ---------------------------------------------
-sim  <- readRDS("simdata.rds")
-Y    <- sim$Y               # (n x p) data matrix; first column = outcome y
-n    <- nrow(Y)
-p    <- ncol(Y)
+# ---- CHOOSE SCENARIO ----
+scenario <- 1   # Change this to 1, 2, or 3 as needed
 
-# Center the data
+# ---- Path to simulation data ----
+sim_path <- sprintf("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen%d.rds", scenario)
+sim <- readRDS(sim_path)
+
+Y <- sim$Y  # (n x p+1) matrix, first column is y
+n <- nrow(Y)
+p <- ncol(Y)
+
+# Center columns (outcome and predictors)
 Y <- scale(Y, center = TRUE, scale = FALSE)
 
-# 2. Set model parameters -----------------------------------------------
+# ---- Set Stan model parameters ----
 K      <- 30         # upper bound for number of factors
-Sigma1 <- 1.0        # <- set this to your chosen outcome variance
+Sigma1 <- 1.0        # fixed variance for outcome (can be set as desired)
 
-# 3. Prepare Stan data --------------------------------------------------
 stan_data <- list(
    N      = n,
    P      = p,
@@ -33,7 +38,7 @@ stan_data <- list(
    Sigma1 = Sigma1
 )
 
-# 4. Fit the TEB-FAR model ----------------------------------------------
+# ---- Compile and fit Stan model ----
 mod <- stan_model("tebfar_factor_model.stan")
 
 fit <- sampling(
@@ -46,8 +51,9 @@ fit <- sampling(
    control = list(adapt_delta = 0.95)
 )
 
-# 5. Save results -------------------------------------------------------
-saveRDS(fit, "stan_tebfar_fit.rds")
+# ---- Save results ----
+saveRDS(fit, sprintf("stan_tebfar_fit_scen%d.rds", scenario))
 
-# 6. (Optional) Quick summary
+# ---- (Optional) Quick summary ----
 print(fit, pars = c("psi", "tau"), probs = c(0.1, 0.5, 0.9))
+
