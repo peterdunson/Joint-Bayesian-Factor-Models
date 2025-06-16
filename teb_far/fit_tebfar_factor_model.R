@@ -38,8 +38,14 @@ stan_data <- list(
    Sigma1 = Sigma1
 )
 
+#set working directory to where the Stan model file is located
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/teb_far")
+
 # ---- Compile and fit Stan model ----
 mod <- stan_model("tebfar_factor_model.stan")
+
+# Set working directory to where the simulation data is stored
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations")
 
 fit <- sampling(
    object  = mod,
