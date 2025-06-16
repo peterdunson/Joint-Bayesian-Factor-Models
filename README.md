@@ -61,3 +61,11 @@ This repository contains simulation scripts and Stan implementations for sparse 
 ---
 
 **Feel free to use or adapt these scripts for your own simulation studies or model comparison tasks.**
+
+
+---
+
+## Credits
+
+- **Sparse Bayesian Infinite Factor Model**: Based on the method from Bhattacharya & Dunson (2011), *Bayesian Analysis*.
+- **Targeted Empirical Bayes Factor Regression (TEB-FAR)**: Based on the method from Palmer & Dunson (2025, arXiv preprint).
