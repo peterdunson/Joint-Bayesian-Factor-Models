@@ -1,3 +1,5 @@
+# simulation_data.R
+# Simulate data for the Bayesian infinite factor model
 set.seed(123)
 
 # Parameters
@@ -15,15 +17,16 @@ for (h in 1:k) {
    Lambda[temp, h] <- rnorm(numeff[h], 0, 1)
 }
 
-# True covariance
+# True covariance matrix
 Ot <- Lambda %*% t(Lambda) + 0.01 * diag(p)
 
 # Generate N x p data matrix, each row ~ N(0, Ot)
 library(MASS)
 dat <- mvrnorm(n = N, mu = rep(0, p), Sigma = Ot)
 
-# Scale the data
+# Center and scale the data (as required by the Stan model)
 Y <- scale(dat, center = TRUE, scale = TRUE)
-n <- nrow(Y)
-p <- ncol(Y)
-K <- 20   # Upper bound for factors, as in Stan code
+
+# Save the simulation as an RDS file for downstream use
+saveRDS(list(Y = Y, Lambda = Lambda, Ot = Ot), file = "simdata.rds")
+
