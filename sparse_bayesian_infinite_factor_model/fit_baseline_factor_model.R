@@ -12,7 +12,7 @@ Sys.setenv(SDKROOT = "/Library/Developer/CommandLineTools/SDKs/MacOSX15.5.sdk")
 scenario <- 1  # Change this to 1, 2, or 3 as needed
 
 # ---- Path to simulation data ----
-sim_path <- sprintf("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen%d.rds", scenario)
+sim_path <- sprintf("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen%d_200.rds", scenario)
 sim <- readRDS(sim_path)
 
 Y <- sim$Y  # n x p matrix
