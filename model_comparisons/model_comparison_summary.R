@@ -102,22 +102,33 @@ ridge_mse <- mean((y_test - ridge_pred)^2)
 # ---------------------------------------------------------------
 # ---- OLS ----
 # ---------------------------------------------------------------
-ols_mod <- lm(y_train ~ X_train)
-ols_pred <- predict(ols_mod, newdata = data.frame(X_train = X_test))
+# Use a data frame with the correct column names for training and testing
+X_train_df <- as.data.frame(X_train)
+X_test_df <- as.data.frame(X_test)
+colnames(X_test_df) <- colnames(X_train_df)  # Ensure matching names
+
+ols_mod <- lm(y_train ~ ., data = X_train_df)
+ols_pred <- predict(ols_mod, newdata = X_test_df)
 ols_mse <- mean((y_test - ols_pred)^2)
 
 # ---------------------------------------------------------------
 # ---- PCA + Regression ----
 # ---------------------------------------------------------------
+# PCA on training set only, then regress on top M PCs
 pca <- prcomp(X_train, center = FALSE, scale. = FALSE)
 expl_var <- cumsum(pca$sdev^2) / sum(pca$sdev^2)
 M <- which(expl_var >= 0.95)[1]
 X_train_pca <- pca$x[, 1:M, drop = FALSE]
 X_test_pca <- predict(pca, newdata = X_test)[, 1:M, drop = FALSE]
-pca_reg_mod <- lm(y_train ~ X_train_pca)
-pca_pred <- predict(pca_reg_mod, newdata = data.frame(X_train_pca = X_test_pca))
-pca_mse <- mean((y_test - pca_pred)^2)
 
+# Convert to data frames with consistent column names
+X_train_pca_df <- as.data.frame(X_train_pca)
+X_test_pca_df <- as.data.frame(X_test_pca)
+colnames(X_test_pca_df) <- colnames(X_train_pca_df)
+
+pca_reg_mod <- lm(y_train ~ ., data = X_train_pca_df)
+pca_pred <- predict(pca_reg_mod, newdata = X_test_pca_df)
+pca_mse <- mean((y_test - pca_pred)^2)
 # ---------------------------------------------------------------
 # ---- Results ----
 # ---------------------------------------------------------------

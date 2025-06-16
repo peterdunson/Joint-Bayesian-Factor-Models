@@ -12,7 +12,7 @@ Sys.setenv(SDKROOT = "/Library/Developer/CommandLineTools/SDKs/MacOSX15.5.sdk")
 scenario <- 1  # Change this to 1, 2, or 3 as needed
 
 # ---- Path to simulation data ----
-sim_path <- sprintf("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen%d_200.rds", scenario)
+sim_path <- sprintf("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen%d_1000.rds", scenario) #CHANGE BASED ON NTRAIN
 sim <- readRDS(sim_path)
 
 Y <- sim$Y  # n x p matrix
@@ -44,7 +44,7 @@ setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations")
 fit <- sampling(
    object = mod,
    data = stan_data,
-   chains = 4,
+   chains = 4, 
    iter = 2000,
    warmup = 1000,
    seed = 42,
