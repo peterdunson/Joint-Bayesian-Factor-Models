@@ -4,11 +4,27 @@
 
 **Folders**:
 
-**sparse_bayesian_infinite_factor_model** - Includes code for “Sparse Bayesian Infinite Factor Models” (Bhattacharya & Dunson, 2011)
+simulations/
 
-Files:
+This folder contains scripts and resources for running simulation studies to evaluate the performance and robustness of the Joint Bayesian Factor Models. Typical uses include generating synthetic datasets, applying the factor models under different scenarios, and benchmarking statistical properties.
+Key files:
 
-- mgps_factor_model.stan — Stan code for the Bayesian infinite factor model
-- simulation_data.R — R script to simulate data with a sparse factor structure
-- implementation.R — R script to fit the Stan model to data (minimal version, just fitting and saving)
-- train_test_performance.R — R script for evaluating predictive performance using a train/test split; written in a general format for joint Bayesian factor models (expects real datasets with predictors and outcomes, not the simulation data here)
+run_simulation.R: Main driver script for running simulation experiments across varying setups.
+simulation_utils.R: Helper functions for data generation, results aggregation, and plotting.
+results/: Contains output files and figures generated from simulation runs.
+sparse_bayesian_infinite_factor_model/
+
+Implements methods and code for sparse Bayesian infinite factor models, which allow for automatic determination of the number of latent factors and encourage sparsity in factor loadings.
+Key files:
+
+sbifm_model.stan: Stan model specification for the sparse Bayesian infinite factor model.
+fit_sbifm.R: R script for fitting the model to data using Stan.
+sbifm_utils.R: Utilities for preprocessing, postprocessing, and summarizing factor analysis results.
+teb_far/
+
+This directory provides code for the Two-Exchangeable Blocks Factor Analysis Regression (TEB-FAR) model, suitable for settings with structured latent factors and grouped data.
+Key files:
+
+teb_far_model.stan: Stan model file for TEB-FAR.
+fit_teb_far.R: Main script to fit the TEB-FAR model to provided datasets.
+teb_far_postprocess.R: Functions and scripts for extracting, visualizing, and interpreting TEB-FAR model results.
