@@ -44,5 +44,5 @@ saveRDS(
       Omega = Omega,     # Covariance used
       Lambda = Lambda    # True factor loadings
    ),
-   file = "simdata.rds"
+   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen1.rds"
 )
