@@ -32,8 +32,14 @@ stan_data <- list(
    Y = Y
 )
 
+#set working directory to where the Stan model file is located
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/sparse_bayesian_infinite_factor_model")
+
 # ---- Compile and sample
 mod <- stan_model("mgps_factor_model.stan")
+
+# Set working directory to where the simulation data is stored
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations")
 
 fit <- sampling(
    object = mod,
