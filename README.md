@@ -10,8 +10,6 @@ This repository contains simulation scripts and Stan implementations for sparse 
 
 - **Joint-Bayesian-Factor-Models.Rproj**
   - **RStudio project file** for managing the repository.
-- **README.md**
-  - **This documentation file**.
 
 ---
 
