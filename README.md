@@ -50,16 +50,31 @@ This repository contains simulation scripts and Stan implementations for sparse 
 
 ---
 
+**model_comparisons/**
+
+- Contains scripts for comparing model performance across different approaches.
+    - **model_comparison_summary.R**
+      - **R script that loads simulation data and model fits**, compares prediction mean squared error (MSE) for:
+        - TEB-FAR (Stan)
+        - Baseline factor model (Stan)
+        - Lasso regression
+        - Ridge regression
+        - Ordinary least squares (OLS)
+        - PCA + regression
+      - Outputs summary statistics and test-set MSE for all models.
+
+---
+
 ## Usage
 
 - Run any script in the **simulations/** folder to generate data for a given scenario.
 - Use the relevant R script in **sparse_bayesian_infinite_factor_model/** or **teb_far/** to fit the corresponding model to your data.
+- To compare models, run **model_comparison_summary.R** in the **model_comparisons/** folder after model fits are saved.
 - Output and results are saved in `.rds` format for downstream analysis.
 
 ---
 
 **Feel free to use or adapt these scripts for your own simulation studies or model comparison tasks.**
-
 
 ---
 
