@@ -2,9 +2,9 @@
  A comprehensive repository with simple code for using Joint Bayesian Factor Models
 
 
-##Folders
+**Folders**
 
-sparse_bayesian_infinite_factor_model
+**sparse_bayesian_infinite_factor_model**
 Includes code for “Sparse Bayesian Infinite Factor Models” (Bhattacharya & Dunson, 2011)
 
 Files:
