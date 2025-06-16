@@ -3,8 +3,8 @@
 set.seed(123)   # For reproducibility
 
 # ----- Simulation Parameters -----
-n_train <- 200   # Number of training samples (adjust as needed)
-n_test  <- 1000  # Number of test samples (for completeness)
+n_train <- 1000   # Number of training samples (adjust as needed)
+n_test  <- 10000  # Number of test samples (for completeness)
 p <- 20          # Number of predictors (excluding outcome)
 K <- 10          # Number of latent factors (matches factor model truncation)
 
@@ -44,5 +44,5 @@ saveRDS(
       Omega = Omega,     # Covariance used
       Lambda = Lambda    # True factor loadings
    ),
-   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen1.rds"
+   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen1_1000.rds"
 )

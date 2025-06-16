@@ -4,7 +4,7 @@
 set.seed(123)
 
 # -- Parameters --
-n_train <- 200
+n_train <- 1000
 p <- 20
 k <- 8
 rsquared <- 0.1      # Strength of y~X
@@ -45,6 +45,6 @@ saveRDS(
       Lambda = Lambda,
       beta = beta
    ),
-   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen3.rds"
+   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen3_1000.rds"
 )
 

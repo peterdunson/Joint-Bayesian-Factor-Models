@@ -3,7 +3,7 @@
 set.seed(123)   # For reproducibility
 
 # ----- Parameters -----
-n_train <- 200   # Training samples
+n_train <- 1000   # Training samples
 p <- 20          # Predictors (not counting outcome)
 K <- 10          # Latent factors
 
@@ -39,5 +39,5 @@ saveRDS(
       Omega = Omega,     # True covariance
       Lambda = Lambda    # True loadings
    ),
-   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen2.rds"
+   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen2_1000.rds"
 )
