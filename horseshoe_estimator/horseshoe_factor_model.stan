@@ -17,12 +17,8 @@ parameters {
   vector<lower=0>[P-1] psi_free;
 
   // Horseshoe global and local scales
-  real<lower=0> tau_global;              // global shrinkage for loadings
-  matrix<lower=0>[P, K] tau_local;       // local shrinkage for loadings
-
-  // Horseshoe auxiliary variables for the half-Cauchy priors
-  real<lower=0> aux_global;
-  matrix<lower=0>[P, K] aux_local;
+  real<lower=0> lambda_global;           // global shrinkage for loadings
+  matrix<lower=0>[P, K] lambda_local;    // local shrinkage for loadings
 }
 
 transformed parameters {
@@ -40,23 +36,14 @@ model {
   // Priors for residual variances
   psi_free ~ gamma(a_psi, b_psi);
 
-  // Horseshoe priors for Lambda (per Carvalho et al. 2010, Section 3.1):
-  // Lambda_{jk} ~ N(0, tau_global^2 * tau_local[j,k]^2)
+  // Half-Cauchy priors on global and local scales (Carvalho et al. 2010)
+  lambda_global ~ cauchy(0, 1);
+  to_vector(lambda_local) ~ cauchy(0, 1);
 
-  // Prior: tau_global ~ half-Cauchy(0, 1)
-  tau_global ~ normal(0, 1);
-  aux_global ~ normal(0, 1);
-  target += -log(1 + square(tau_global / aux_global)); // Jacobian adjustment for half-Cauchy
-
-  // Prior: tau_local[j,k] ~ half-Cauchy(0, 1)
-  to_vector(tau_local) ~ normal(0, 1);
-  to_vector(aux_local) ~ normal(0, 1);
-  target += sum(-log(1 + square(to_vector(tau_local) ./ to_vector(aux_local)))); // Jacobian
-
-  // Prior for Lambda
+  // Prior for Lambda (horseshoe)
   for (p in 1:P)
     for (k in 1:K)
-      Lambda[p, k] ~ normal(0, tau_global * tau_local[p, k]);
+      Lambda[p, k] ~ normal(0, lambda_global * lambda_local[p, k]);
 
   // Prior for factors
   to_vector(eta) ~ normal(0, 1);
@@ -69,3 +56,6 @@ model {
   }
 }
 
+generated quantities {
+  // Optionally add predictive quantities, posterior predictive checks, etc.
+}

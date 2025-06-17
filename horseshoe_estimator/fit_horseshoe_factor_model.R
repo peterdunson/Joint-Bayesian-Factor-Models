@@ -36,7 +36,7 @@ stan_data <- list(
    Sigma1 = Sigma1
 )
 
-setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/horseshoe")
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/horseshoe_estimator")
 
 mod <- stan_model("horseshoe_factor_model.stan")
 
@@ -53,4 +53,5 @@ fit <- sampling(
 )
 
 saveRDS(fit, sprintf("stan_horseshoe_fit_scen%d_5.rds", scenario))
-print(fit, pars = c("psi", "tau_global", "tau_local"), probs = c(0.1, 0.5, 0.9))
+print(fit, pars = c("psi", "lambda_global", "lambda_local"), probs = c(0.1, 0.5, 0.9))
+
