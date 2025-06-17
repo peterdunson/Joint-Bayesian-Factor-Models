@@ -15,7 +15,7 @@ sim_data_rds <- "sim_scen1_1000.rds"                      # Simulated data path
 output_rds   <- "robust_sparse_factor_fit_scen1.rds"       # Output path
 
 # Model/Hyperparameters
-K        <- 10         # Truncation level (upper bound for factors)
+K        <- 5         # Truncation level (upper bound for factors)
 nu       <- 3          # Degrees of freedom for Student-t
 a1       <- 2          # MGP: delta_1 prior shape
 a2       <- 3          # MGP: delta_{l>=2} prior shape
@@ -24,8 +24,10 @@ a_sigma  <- 2          # Error variance prior (Inverse Gamma)
 b_sigma  <- 2          # Error variance prior (Inverse Gamma)
 
 n_chains <- 4
-n_iter   <- 2000
-n_warmup <- 1000
+n_iter   <- 3000
+n_warmup <- 1500
+
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations")
 
 # -------------- LOAD DATA ------------------------
 sim <- readRDS(sim_data_rds)
@@ -48,6 +50,7 @@ stan_data <- list(
 )
 
 # -------------- FIT MODEL -------------------------
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/robust_sparse_infinite_factor_model")
 mod <- stan_model(stan_file)
 
 fit <- sampling(
