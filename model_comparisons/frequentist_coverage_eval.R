@@ -4,6 +4,9 @@
 # using simulation with true beta values
 # -------------------------------------------
 
+#IN PROGRESS, NOT RUNNING PROPERLY!!!!
+
+
 library(glmnet)
 
 # ---- LOAD SIM DATA ----
