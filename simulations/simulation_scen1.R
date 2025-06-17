@@ -37,12 +37,17 @@ for (i in 1:nrow(Omega)) {
 library(mvtnorm)
 yX <- rmvnorm(n = n_train, sigma = Omega)  # [n x (p+1)], first column is outcome y
 
-# Save for Stan
+# --- Compute implied regression coefficients for predictors ---
+true_beta <- Lambda[2:(p+1), 1] * Lambda[1, 1]
+
+# --- Save for Stan ---
 saveRDS(
    list(
       Y = yX,            # Data matrix [n x (p+1)], first column is y
       Omega = Omega,     # Covariance used
-      Lambda = Lambda    # True factor loadings
+      Lambda = Lambda,   # True factor loadings
+      beta = true_beta   # True regression coefficients
    ),
-   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen1_1000.rds"
+   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen1_1000_beta.rds"
 )
+
