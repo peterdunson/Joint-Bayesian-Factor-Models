@@ -27,7 +27,7 @@ p <- ncol(Y)
 Y <- scale(Y, center = TRUE, scale = FALSE)
 
 # ---- Set Stan model parameters ----
-K      <- 10         # upper bound for number of factors
+K      <- 5         # upper bound for number of factors
 Sigma1 <- 1.0        # fixed variance for outcome (can be set as desired)
 
 stan_data <- list(
