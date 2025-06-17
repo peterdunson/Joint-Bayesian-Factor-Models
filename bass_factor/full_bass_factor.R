@@ -1,21 +1,20 @@
-# FULL BASS (Zhao et al., JMLR 2016): Mixture of Dense, Sparse, and Null Factors
-# Faithful Gibbs Sampler Implementation (core logic)
-
 library(MASS) # for mvrnorm
 
-# --- Data: Y (n x p), number of factors K ---
-# Y: data matrix, centered
-# K: number of latent factors
+# ---- Dirichlet sampler (helper function) ----
+rdirichlet <- function(n, alpha) {
+   x <- matrix(rgamma(length(alpha) * n, shape = alpha), ncol = length(alpha), byrow = TRUE)
+   x / rowSums(x)
+}
 
+# --- FULL BASS (Zhao et al., JMLR 2016): Mixture of Dense, Sparse, and Null Factors ---
 BASS_gibbs <- function(Y, K, n_iter = 3000, burn_in = 1500,
                        a_sigma=1, b_sigma=0.3, a_tau=0.5, b_tau=0.5, verbose=TRUE) {
    n <- nrow(Y)
    p <- ncol(Y)
-   # Hyperpriors for mixture weights (Dirichlet prior)
    pi_prior <- c(1, 1, 1)  # prior for (sparse, dense, null)
    # Initialization
    X <- matrix(rnorm(n * K), n, K)
-   Lambda <- matrix(0, p, K)
+   Lambda <- matrix(rnorm(p * K), p, K)   # <--- RANDOM INIT, not zeros!
    sigma2 <- rep(1, p)
    tau_col <- rep(1, K)          # for dense
    tau_elem <- matrix(1, p, K)   # for sparse
@@ -50,9 +49,8 @@ BASS_gibbs <- function(Y, K, n_iter = 3000, burn_in = 1500,
          logp[1] <- sum(dnorm(Lambda[, k], 0, sqrt(tau_elem[, k]), log = TRUE)) + log(pi_vec[1])
          # Dense (1): column shrinkage
          logp[2] <- sum(dnorm(Lambda[, k], 0, sqrt(tau_col[k]), log = TRUE)) + log(pi_vec[2])
-         # Null (2): all zero
-         logp[3] <- if (all(Lambda[, k] == 0)) 0 else -1e8
-         logp[3] <- logp[3] + log(pi_vec[3])
+         # Null (2): near zero (allows escaping null state!)
+         logp[3] <- sum(dnorm(Lambda[, k], 0, 1e-8, log = TRUE)) + log(pi_vec[3])
          # Normalize and sample
          maxlp <- max(logp)
          pz <- exp(logp - maxlp)
@@ -116,8 +114,3 @@ BASS_gibbs <- function(Y, K, n_iter = 3000, burn_in = 1500,
    return(list(Lambda = Lambda_store, z_k = z_store, pi = pi_store))
 }
 
-# ---- Dirichlet sampler (helper function) ----
-rdirichlet <- function(n, alpha) {
-   x <- matrix(rgamma(length(alpha) * n, shape = alpha), ncol = length(alpha), byrow = TRUE)
-   x / rowSums(x)
-}
