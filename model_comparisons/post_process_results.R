@@ -5,6 +5,8 @@
 # For Bayesian Factor Model Simulation Studies
 # -----------------------------
 
+#IN PROGRESS.
+
 library(tidyverse)
 library(rstan)
 library(bayesplot)
