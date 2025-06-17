@@ -80,6 +80,6 @@ This repository contains simulation scripts and Stan implementations for sparse 
 
 ## Credits
 
-- **Sparse Bayesian Infinite Factor Model**: Based on the method from Bhattacharya & Dunson (2011), *Bayesian Analysis*. https://github.com/david-dunson/sparse_bayesian_infinite_factor_models
+- **Sparse Bayesian Infinite Factor Model**: Based on the method from Bhattacharya & Dunson (2011, Biometrica). https://github.com/david-dunson/sparse_bayesian_infinite_factor_models
 - **Targeted Empirical Bayes Factor Regression (TEB-FAR)**: Based on the method from Palmer & Dunson (2025, arXiv preprint). https://github.com/glennpalmer/TEB-FAR
 - **Robust sparse Bayesian infinite factor models**: Based on the method from Jaejoon Lee, Seongil Jo, Jaeyong Lee (2022, Comput Stat). https://github.com/lee-jaejoon/robust-sparse-bayesian-infinite-factor-models/tree/main
