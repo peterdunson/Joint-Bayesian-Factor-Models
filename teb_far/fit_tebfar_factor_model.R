@@ -65,7 +65,3 @@ saveRDS(fit, sprintf("stan_tebfar_fit_scen%d_5.rds", scenario))
 print(fit, pars = c("psi", "tau"), probs = c(0.1, 0.5, 0.9))
 
 
-
-
-
-
