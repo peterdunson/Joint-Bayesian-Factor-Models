@@ -5,6 +5,9 @@
 
 library(rstan)
 
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+
 # If using Mac, keep this:
 Sys.setenv(SDKROOT = "/Library/Developer/CommandLineTools/SDKs/MacOSX15.5.sdk")
 
@@ -23,7 +26,7 @@ n <- nrow(Y)
 p <- ncol(Y)
 
 # ---- Stan model setup ----
-K <- 30  # Or as appropriate for your data
+K <- 10  # Or as appropriate for your data
 
 stan_data <- list(
    N = n,
@@ -45,11 +48,12 @@ fit <- sampling(
    object = mod,
    data = stan_data,
    chains = 4, 
-   iter = 2000,
-   warmup = 1000,
+   iter = 3000,
+   warmup = 1500,
    seed = 42,
-   control = list(adapt_delta = 0.95)
+   control = list(adapt_delta = 0.99, max_treedepth = 15)
 )
+
 
 print(fit, pars = c("tau", "psi", "delta"), probs = c(0.1, 0.5, 0.9))
 
