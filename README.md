@@ -1,4 +1,4 @@
-# Joint-Bayesian-Factor-Models
+# Joint Bayesian Factor Models
 
 This repository contains simulation scripts and Stan implementations for sparse Bayesian infinite factor models, targeted empirical Bayes (TEB-FAR) regression, and robust factor models. It includes tools for model comparison and simulation-based benchmarking.
 
