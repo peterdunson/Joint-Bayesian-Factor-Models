@@ -39,7 +39,7 @@ y_test  <- y[test_idx]
 # ---- TEB-FAR (Stan) ----
 # ---------------------------------------------------------------
 setwd(tebfar_dir)
-tebfar_fit_file <- sprintf("%s/stan_tebfar_fit_scen%d.rds", sim_dir, scenario)
+tebfar_fit_file <- sprintf("%s/stan_tebfar_fit_scen%d_5.rds", sim_dir, scenario)
 if (file.exists(tebfar_fit_file)) {
    tebfar_fit <- readRDS(tebfar_fit_file)
    tebfar_post <- rstan::extract(tebfar_fit)
@@ -73,7 +73,7 @@ if (file.exists(tebfar_fit_file)) {
 # ---- Baseline Factor Model (Stan) ----
 # ---------------------------------------------------------------
 setwd(baseline_dir)
-baseline_fit_file <- sprintf("%s/mgps_fit_scen%d.rds", sim_dir, scenario)
+baseline_fit_file <- sprintf("%s/mgps_fit_scen%d_5.rds", sim_dir, scenario)
 if (file.exists(baseline_fit_file)) {
    baseline_fit <- readRDS(baseline_fit_file)
    baseline_post <- rstan::extract(baseline_fit)

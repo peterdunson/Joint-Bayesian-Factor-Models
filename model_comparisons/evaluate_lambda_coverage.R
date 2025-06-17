@@ -15,8 +15,8 @@ tebfar_dir   <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/teb_far
 baseline_dir <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/sparse_bayesian_infinite_factor_model"
 
 sim_file           <- sprintf("%s/sim_scen%d_%d.rds", sim_dir, scenario, n_train)
-tebfar_fit_file    <- sprintf("%s/stan_tebfar_fit_scen%d.rds", sim_dir, scenario)
-baseline_fit_file  <- sprintf("%s/mgps_fit_scen%d.rds", sim_dir, scenario)
+tebfar_fit_file    <- sprintf("%s/stan_tebfar_fit_scen%d_5.rds", sim_dir, scenario)
+baseline_fit_file  <- sprintf("%s/mgps_fit_scen%d_5.rds", sim_dir, scenario)
 
 # -------------- Load Data & True Parameters --------------
 sim         <- readRDS(sim_file)
@@ -54,18 +54,34 @@ evaluate_ci <- function(posterior_array, Lambda_true, method_name = "TEB-FAR") {
    ))
 }
 
+
 # -------------- TEB-FAR --------------------
 if (file.exists(tebfar_fit_file)) {
    tebfar_fit <- readRDS(tebfar_fit_file)
    tebfar_post <- rstan::extract(tebfar_fit)
-   # posterior$Lambda: [iterations, p+1, K]
-   # Make sure Lambda_true and posterior$Lambda match in shape
-   res_tebfar <- evaluate_ci(tebfar_post$Lambda, Lambda_true, method_name = "TEB-FAR")
+   # posterior$Lambda: [iterations, rows, cols] (should be [iterations, 21, 5])
+   if (all(dim(tebfar_post$Lambda)[2:3] == dim(Lambda_true))) {
+      res_tebfar <- evaluate_ci(tebfar_post$Lambda, Lambda_true, method_name = "TEB-FAR")
+   } else {
+      cat("Dimension mismatch for TEB-FAR: check K and simulation!\n")
+      cat("Posterior Lambda dim: ", paste(dim(tebfar_post$Lambda), collapse = " x "), "\n")
+      cat("True Lambda dim: ", paste(dim(Lambda_true), collapse = " x "), "\n")
+   }
 }
 
 # -------------- Baseline -------------------
 if (file.exists(baseline_fit_file)) {
    baseline_fit <- readRDS(baseline_fit_file)
    baseline_post <- rstan::extract(baseline_fit)
-   res_baseline <- evaluate_ci(baseline_post$Lambda, Lambda_true, method_name = "Baseline")
+   # posterior$Lambda: [iterations, rows, cols] (should be [iterations, 21, 5])
+   if (all(dim(baseline_post$Lambda)[2:3] == dim(Lambda_true))) {
+      res_baseline <- evaluate_ci(baseline_post$Lambda, Lambda_true, method_name = "Baseline")
+   } else {
+      cat("Dimension mismatch for Baseline: check K and simulation!\n")
+      cat("Posterior Lambda dim: ", paste(dim(baseline_post$Lambda), collapse = " x "), "\n")
+      cat("True Lambda dim: ", paste(dim(Lambda_true), collapse = " x "), "\n")
+   }
 }
+
+
+

@@ -24,8 +24,8 @@ true_Lambda <- sim$Lambda
 true_Omega <- sim$Omega
 
 # --- 2. Load Model Fits (Update paths/names as needed) ---
-tebfar_fit <- readRDS(file.path(fit_dir, sprintf("stan_tebfar_fit_scen%d.rds", scenario)))
-baseline_fit <- readRDS(file.path(fit_dir, sprintf("mgps_fit_scen%d.rds", scenario)))
+tebfar_fit <- readRDS(file.path(fit_dir, sprintf("stan_tebfar_fit_scen%d_5.rds", scenario))) #UPDATE
+baseline_fit <- readRDS(file.path(fit_dir, sprintf("mgps_fit_scen%d_5.rds", scenario))) #UPDATE
 # Add others as needed
 
 # --- 3. Predictive Metrics: Test MSE, AUC (if binary y) ---

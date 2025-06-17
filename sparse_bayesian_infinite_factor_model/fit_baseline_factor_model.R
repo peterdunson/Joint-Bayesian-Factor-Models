@@ -26,7 +26,7 @@ n <- nrow(Y)
 p <- ncol(Y)
 
 # ---- Stan model setup ----
-K <- 10  # Or as appropriate for your data
+K <- 5  # Or as appropriate for your data
 
 stan_data <- list(
    N = n,
@@ -57,5 +57,5 @@ fit <- sampling(
 
 print(fit, pars = c("tau", "psi", "delta"), probs = c(0.1, 0.5, 0.9))
 
-saveRDS(fit, file = sprintf("mgps_fit_scen%d.rds", scenario))
+saveRDS(fit, file = sprintf("mgps_fit_scen%d_5.rds", scenario))
 
