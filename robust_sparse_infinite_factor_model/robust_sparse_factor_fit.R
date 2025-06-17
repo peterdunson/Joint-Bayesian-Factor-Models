@@ -25,7 +25,7 @@ p <- ncol(Y)
 # Center columns (as in TEB-FAR)
 Y <- scale(Y, center = TRUE, scale = FALSE)
 
-# ---- Set Stan model parameters ----
+# ---- Set Stan model parameters ----******************************************
 K        <- 5     # Truncation level (upper bound for factors)
 nu       <- 3     # Degrees of freedom for Student-t
 a1       <- 2
