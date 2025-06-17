@@ -139,3 +139,42 @@ cat("Lasso:       ", lasso_mse, "\n")
 cat("Ridge:       ", ridge_mse, "\n")
 cat("OLS:         ", ols_mse, "\n")
 cat("PCA+Regress: ", pca_mse, "\n")
+
+
+# ---------------------------------------------------------------
+# ---- Visualize Factor Loadings ----
+# ---------------------------------------------------------------
+
+library(ggplot2)
+
+# Plot TEB-FAR factor loadings heatmap
+if (exists("Lambda_tebfar")) {
+   loadings_long <- as.data.frame(as.table(Lambda_tebfar))
+   colnames(loadings_long) <- c("Variable", "Factor", "Loading")
+   ggplot(loadings_long, aes(x = as.factor(Factor), y = as.factor(Variable), fill = Loading)) +
+      geom_tile() +
+      scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+      labs(
+         title = "TEB-FAR Factor Loadings Heatmap",
+         x = "Factor",
+         y = "Variable"
+      ) +
+      theme_minimal()
+}
+
+# Plot Baseline factor loadings heatmap
+if (exists("Lambda_baseline")) {
+   loadings_long_base <- as.data.frame(as.table(Lambda_baseline))
+   colnames(loadings_long_base) <- c("Variable", "Factor", "Loading")
+   ggplot(loadings_long_base, aes(x = as.factor(Factor), y = as.factor(Variable), fill = Loading)) +
+      geom_tile() +
+      scale_fill_gradient2(low = "blue", high = "red", mid = "white", midpoint = 0) +
+      labs(
+         title = "Baseline Factor Model Loadings Heatmap",
+         x = "Factor",
+         y = "Variable"
+      ) +
+      theme_minimal()
+}
+
+
