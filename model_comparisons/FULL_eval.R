@@ -65,6 +65,37 @@ predict_y_from_factors <- function(Xtest, Lambda, psi, y_col = 1) {
    preds
 }
 
+evaluate_ci <- function(posterior_array, Lambda_true, method_name = "TEB-FAR") {
+   # posterior_array: [iterations, rows, cols]
+   # Lambda_true: [rows, cols]
+   lower <- apply(posterior_array, c(2, 3), quantile, probs = 0.025)
+   upper <- apply(posterior_array, c(2, 3), quantile, probs = 0.975)
+   mean_est <- apply(posterior_array, c(2, 3), mean)
+   
+   coverage <- (Lambda_true >= lower) & (Lambda_true <= upper)
+   coverage_rate <- mean(coverage)
+   
+   # CI symmetry: (upper - mean) vs (mean - lower)
+   upper_diff <- upper - mean_est
+   lower_diff <- mean_est - lower
+   symmetry <- abs(upper_diff - lower_diff) / (upper_diff + lower_diff + 1e-10)  # Avoid 0/0
+   
+   cat(sprintf(
+      "%s Lambda 95%% coverage: %.2f%%\n", method_name, 100 * coverage_rate
+   ))
+   
+   cat(sprintf(
+      "%s average CI symmetry (0 = perfect): %.3f\n", method_name, mean(symmetry)
+   ))
+   
+   hist(symmetry, breaks = 30, main = sprintf("%s Lambda CI Symmetry", method_name), xlab = "Symmetry measure")
+   invisible(list(
+      coverage = coverage,
+      coverage_rate = coverage_rate,
+      symmetry = symmetry
+   ))
+}
+
 # ---- Evaluate/posterior mean for Stan models ----
 evaluate_stan_fit <- function(fit_file, method_name, Lambda_true = NULL) {
    if (!file.exists(fit_file)) {
@@ -75,60 +106,46 @@ evaluate_stan_fit <- function(fit_file, method_name, Lambda_true = NULL) {
    post <- rstan::extract(fit)
    Lambda <- apply(post$Lambda, c(2,3), mean)
    psi <- apply(post$psi, 2, mean)
+   # Prediction
    pred <- predict_y_from_factors(X_test, Lambda, psi)
    mse <- mean((y_test - pred)^2)
    # Heatmap
    print(pheatmap::pheatmap(Lambda, cluster_rows = FALSE, cluster_cols = FALSE,
                             main = sprintf("%s Factor Loadings", method_name)))
+   # Histogram
    hist(as.numeric(Lambda), breaks = 50, main = sprintf("%s Posterior Mean Loadings", method_name))
+   # Sparsity
    sparse_frac <- mean(abs(Lambda) < 0.05)
    cat(sprintf("[%s] Test-set MSE: %.4f | Fraction near-zero loadings (<0.05): %.2f\n",
                method_name, mse, sparse_frac))
-   # Add CI symmetry/coverage if true loadings supplied
-   if (!is.null(Lambda_true) && all(dim(post$Lambda)[2:3] == dim(Lambda_true))) {
-      evaluate_ci(post$Lambda, Lambda_true, method_name = method_name)
+   # --- Coverage and CI symmetry ---
+   if (!is.null(Lambda_true)) {
+      # Try permutations if dims mismatched
+      post_lambda_dim <- dim(post$Lambda)
+      true_dim <- dim(Lambda_true)
+      if (length(post_lambda_dim) == 3 && all(post_lambda_dim[2:3] == true_dim)) {
+         evaluate_ci(post$Lambda, Lambda_true, method_name = method_name)
+      } else if (length(post_lambda_dim) == 3 && post_lambda_dim[3] == true_dim[1]) {
+         Lambda_perm <- aperm(post$Lambda, c(1, 3, 2))
+         if (all(dim(Lambda_perm)[2:3] == true_dim)) {
+            evaluate_ci(Lambda_perm, Lambda_true, method_name = method_name)
+         } else {
+            cat("Dimension mismatch for Lambda in CI eval\n")
+         }
+      } else {
+         cat("Dimension mismatch for Lambda in CI eval\n")
+      }
    }
    invisible(list(mse = mse, Lambda = Lambda, sparse_frac = sparse_frac))
 }
 
 
 
-
-# ---- Evaluate VI-MSFA ----
-evaluate_vimsfa <- function(fit_file, method_name) {
-   if (!file.exists(fit_file)) {
-      cat("VIMSFA fit file missing:", fit_file, "\n")
-      return(list(mse = NA))
-   }
-   fit <- readRDS(fit_file)
-   Lambda <- fit$mean_lambda
-   psi <- fit$mean_psi
-   # Pad to match Stan format (add outcome row)
-   Lambda <- rbind(rep(NA, ncol(Lambda)), Lambda)
-   psi <- c(NA, psi)
-   # Prediction: not meaningful for y, so leave as NA
-   pred <- rep(NA, length(y_test))
-   mse <- NA
-   # ---- Heatmap (display only) ----
-   print(pheatmap::pheatmap(Lambda, cluster_rows = FALSE, cluster_cols = FALSE,
-                            main = sprintf("%s Mean Factor Loadings", method_name)))
-   # ---- Histogram (display only) ----
-   hist(as.numeric(Lambda), breaks = 50, main = sprintf("%s Mean Loadings", method_name))
-   # ---- Sparsity ----
-   sparse_frac <- mean(abs(Lambda[-1,]) < 0.05, na.rm = TRUE)
-   cat(sprintf("[%s] Fraction near-zero loadings (<0.05): %.2f\n",
-               method_name, sparse_frac))
-   invisible(list(Lambda = Lambda, sparse_frac = sparse_frac))
-}
-
-
 # ---- Evaluate all ----
-mgps_out      <- evaluate_stan_fit(mgps_file, "MGPS")
-ssl_out       <- evaluate_stan_fit(ssl_file, "SSL")
-horseshoe_out <- evaluate_stan_fit(horseshoe_file, "Horseshoe")
-tebfar_out    <- evaluate_stan_fit(tebfar_file, "TEB-FAR")
-vimsfa_cavi   <- evaluate_vimsfa(vimsfa_cavi_file, "VI-MSFA_CAVI")
-vimsfa_svi    <- evaluate_vimsfa(vimsfa_svi_file,  "VI-MSFA_SVI")
+mgps_out      <- evaluate_stan_fit(mgps_file, "MGPS", Lambda_true = Lambda_true)
+ssl_out       <- evaluate_stan_fit(ssl_file, "SSL", Lambda_true = Lambda_true)
+horseshoe_out <- evaluate_stan_fit(horseshoe_file, "Horseshoe", Lambda_true = Lambda_true)
+tebfar_out    <- evaluate_stan_fit(tebfar_file, "TEB-FAR", Lambda_true = Lambda_true)
 
 # ---- Print summary of test-set MSEs (only for Stan models) ----
 cat("Test-set MSEs:\n")
@@ -142,5 +159,3 @@ cat("MGPS:      ", mgps_out$sparse_frac, "\n")
 cat("SSL:       ", ssl_out$sparse_frac, "\n")
 cat("Horseshoe: ", horseshoe_out$sparse_frac, "\n")
 cat("TEB-FAR:   ", tebfar_out$sparse_frac, "\n")
-cat("VI-MSFA (CAVI):", vimsfa_cavi$sparse_frac, "\n")
-cat("VI-MSFA (SVI): ", vimsfa_svi$sparse_frac, "\n")

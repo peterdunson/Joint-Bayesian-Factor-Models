@@ -1,6 +1,6 @@
 # simulation_data_tebfar.R
 # Simulate data for TEB-FAR/Bayesian infinite factor regression models
-set.seed(123)   # For reproducibility
+set.seed(113)   # For reproducibility
 
 # ----- Simulation Parameters -----
 n_train <- 1000   # Number of training samples (adjust as needed)
