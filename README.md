@@ -1,6 +1,6 @@
 # Joint Bayesian Factor Models
 
-This repository contains simulation scripts and Stan implementations for sparse Bayesian infinite factor models, targeted empirical Bayes (TEB-FAR) regression, robust and heavy-tailed factor models, **horseshoe factor models**, and **continuous spike-and-slab lasso (SSL) factor models**. It includes tools for model comparison and simulation-based benchmarking.
+This repository contains simulation scripts and Stan implementations for **sparse Bayesian infinite factor models**, **targeted empirical bayes for supervised joint factor analysis (TEB-FAR)**, **robust and heavy-tailed factor models**, **horseshoe factor models**, and **continuous spike-and-slab lasso (SSL) factor models**. It includes tools for model comparison and simulation-based benchmarking.
 
 ---
 
@@ -41,7 +41,7 @@ This repository contains simulation scripts and Stan implementations for sparse 
 
 **teb_far/**
 
-- Targeted Empirical Bayes Factor Analysis Regression (TEB-FAR) model.
+- Targeted Empirical Bayes for Supervised Joint Factor Analysis (TEB-FAR) model.
     - **fit_tebfar_factor_model.R**
       - R script to fit the TEB-FAR model to simulated data.
     - **tebfar_factor_model.stan**
