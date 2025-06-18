@@ -66,7 +66,7 @@ predict_y_from_factors <- function(Xtest, Lambda, psi, y_col = 1) {
 }
 
 # ---- Evaluate/posterior mean for Stan models ----
-evaluate_stan_fit <- function(fit_file, method_name) {
+evaluate_stan_fit <- function(fit_file, method_name, Lambda_true = NULL) {
    if (!file.exists(fit_file)) {
       cat("Fit file missing:", fit_file, "\n")
       return(list(mse = NA))
@@ -75,21 +75,22 @@ evaluate_stan_fit <- function(fit_file, method_name) {
    post <- rstan::extract(fit)
    Lambda <- apply(post$Lambda, c(2,3), mean)
    psi <- apply(post$psi, 2, mean)
-   # Prediction
    pred <- predict_y_from_factors(X_test, Lambda, psi)
    mse <- mean((y_test - pred)^2)
-   # Heatmap (display only)
+   # Heatmap
    print(pheatmap::pheatmap(Lambda, cluster_rows = FALSE, cluster_cols = FALSE,
                             main = sprintf("%s Factor Loadings", method_name)))
-   # Histogram (display only)
-   hist(as.numeric(Lambda), breaks = 50, 
-        main = sprintf("%s Posterior Mean Loadings", method_name))
-   # Sparsity
+   hist(as.numeric(Lambda), breaks = 50, main = sprintf("%s Posterior Mean Loadings", method_name))
    sparse_frac <- mean(abs(Lambda) < 0.05)
    cat(sprintf("[%s] Test-set MSE: %.4f | Fraction near-zero loadings (<0.05): %.2f\n",
                method_name, mse, sparse_frac))
+   # Add CI symmetry/coverage if true loadings supplied
+   if (!is.null(Lambda_true) && all(dim(post$Lambda)[2:3] == dim(Lambda_true))) {
+      evaluate_ci(post$Lambda, Lambda_true, method_name = method_name)
+   }
    invisible(list(mse = mse, Lambda = Lambda, sparse_frac = sparse_frac))
 }
+
 
 
 
