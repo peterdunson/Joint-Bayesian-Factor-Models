@@ -49,7 +49,7 @@ fit <- sampling(
    iter = 3000,
    warmup = 1500,
    seed = 42,
-   control = list(adapt_delta = 0.99, max_treedepth = 15)
+   control = list(adapt_delta = 0.99, max_treedepth = 20)
 )
 
 saveRDS(fit, sprintf("stan_horseshoe_fit_scen%d_5.rds", scenario))
