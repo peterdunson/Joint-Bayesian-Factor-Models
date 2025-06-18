@@ -1,6 +1,6 @@
 # Joint Bayesian Factor Models
 
-This repository contains simulation scripts and Stan implementations for sparse Bayesian infinite factor models, targeted empirical Bayes (TEB-FAR) regression, and robust factor models. It includes tools for model comparison and simulation-based benchmarking.
+This repository contains simulation scripts and Stan implementations for sparse Bayesian infinite factor models, targeted empirical Bayes (TEB-FAR) regression, robust and heavy-tailed factor models, **horseshoe factor models**, and **continuous spike-and-slab lasso (SSL) factor models**. It includes tools for model comparison and simulation-based benchmarking.
 
 ---
 
@@ -61,6 +61,30 @@ This repository contains simulation scripts and Stan implementations for sparse 
 
 ---
 
+**horseshoe_estimator/**
+
+- **Horseshoe prior Bayesian factor analysis model.**
+    - **fit_horseshoe_factor_model.R**
+      - R script to fit the horseshoe factor model.
+    - **horseshoe_factor_model.stan**
+      - Stan code for the horseshoe prior factor model.
+    - **horseshoe_factor_model.rds**
+      - Example Stan fit output.
+
+---
+
+**continuous_spike_slab/**
+
+- **Continuous spike-and-slab lasso (SSL) prior Bayesian factor model.**
+    - **spike_slab_factor.R**
+      - R script to fit the SSL factor model.
+    - **spike_slab_factor_model.stan**
+      - Stan code for the continuous spike-and-slab prior factor model.
+    - **spike_slab_factor_model.rds**
+      - Example Stan fit output.
+
+---
+
 **generalized-infinite-factorization-models/**
 
 - Scripts for other infinite factorization models (from Schiavon et al.).
@@ -77,23 +101,29 @@ This repository contains simulation scripts and Stan implementations for sparse 
     - **model_comparison_summary.R**
       - Loads simulation data and model fits, compares test-set MSE for:
         - TEB-FAR (Stan)
-        - Baseline factor model (Stan)
+        - Baseline factor model (MGPS, Stan)
+        - Horseshoe factor model (Stan)
+        - Continuous spike-and-slab (SSL) factor model (Stan)
         - Lasso, Ridge, OLS, PCA+regression
     - **coverage_eval.R**
       - Evaluates 95% credible interval coverage for factor loadings (Bayesian models).
     - **frequentist_coverage_eval.R**
       - Evaluates 95% CI coverage for frequentist methods (OLS, Ridge, Lasso, PCA+regression).
     - **evaluate_lambda_coverage.R**
-      - Additional coverage and symmetry analysis.
+      - Additional coverage and symmetry analysis for loadings.
     - **post_process_results.R**
       - Utilities for post-processing fit outputs.
+    - **horseshoe_eval.R**
+      - Diagnostics and evaluation scripts for the horseshoe factor model.
+    - **ssl_eval.R**
+      - Diagnostics and evaluation scripts for the continuous spike-and-slab factor model.
 
 ---
 
 ## Usage
 
 - Generate data: Run any script in **simulations/** for a given scenario.
-- Fit models: Use scripts in **sparse_bayesian_infinite_factor_model/**, **teb_far/**, or **robust_sparse_infinite_factor_model/**.
+- Fit models: Use scripts in **sparse_bayesian_infinite_factor_model/**, **teb_far/**, **horseshoe_estimator/**, **continuous_spike_slab/**, or **robust_sparse_infinite_factor_model/**.
 - Compare models: Run scripts in **model_comparisons/** to benchmark and analyze results.
 - Output/results are saved as `.rds` files for downstream analysis.
 
@@ -105,8 +135,10 @@ This repository contains simulation scripts and Stan implementations for sparse 
 
 ## Credits
 
-- **Sparse Bayesian Infinite Factor Model**: Bhattacharya & Dunson (2011, Biometrika) [link](https://github.com/david-dunson/sparse_bayesian_infinite_factor_models)
-- **TEB-FAR**: Palmer & Dunson (2025, arXiv) [link](https://github.com/glennpalmer/TEB-FAR)
-- **Robust Sparse Bayesian Infinite Factor Model**: Lee, Jo, Lee (2022, Comput Stat) [link](https://github.com/lee-jaejoon/robust-sparse-bayesian-infinite-factor-models/tree/main)
+- **Sparse Bayesian Infinite Factor Model:** Bhattacharya & Dunson (2011, Biometrika) [[paper link]](https://academic.oup.com/biomet/article/98/2/291/207469)
+- **TEB-FAR:** Palmer & Dunson (2025, arXiv) [[arXiv link]](https://arxiv.org/abs/2505.11351)
+- **Robust Sparse Bayesian Infinite Factor Model:** Lee, Jo, Lee (2022, Comput Stat) [[GitHub]](https://github.com/lee-jaejoon/robust-sparse-bayesian-infinite-factor-models/tree/main)
+- **Horseshoe Factor Model:** Carvalho, Polson, Scott (2010, Biometrika) [[paper link]](https://academic.oup.com/biomet/article/97/2/465/252073)
+- **Continuous Spike-and-Slab Lasso Factor Model:** Rocková (2018, Annals of Statistics) [[paper link]](https://projecteuclid.org/journals/annals-of-statistics/volume-46/issue-1/Bayesian-estimation-of-sparse-signals-with-a-continuous-spike-and/10.1214/17-AOS1554.full)
 
-
+---
