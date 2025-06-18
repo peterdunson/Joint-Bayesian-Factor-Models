@@ -52,3 +52,7 @@ model {
 generated quantities {
   // Optionally add posterior predictive quantities, e.g. y_rep, etc.
 }
+
+
+
+
