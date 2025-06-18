@@ -78,23 +78,20 @@ evaluate_stan_fit <- function(fit_file, method_name) {
    # Prediction
    pred <- predict_y_from_factors(X_test, Lambda, psi)
    mse <- mean((y_test - pred)^2)
-   # Heatmap
-   heatmap_file <- sprintf("%s_loadings_heatmap.png", method_name)
-   png(heatmap_file, width = 700, height = 600)
-   pheatmap(Lambda, cluster_rows = FALSE, cluster_cols = FALSE,
-            main = sprintf("%s Factor Loadings", method_name))
-   dev.off()
-   # Histogram
-   hist_file <- sprintf("%s_loadings_hist.png", method_name)
-   png(hist_file, width = 600, height = 400)
-   hist(as.numeric(Lambda), breaks = 50, main = sprintf("%s Posterior Mean Loadings", method_name))
-   dev.off()
+   # Heatmap (display only)
+   print(pheatmap::pheatmap(Lambda, cluster_rows = FALSE, cluster_cols = FALSE,
+                            main = sprintf("%s Factor Loadings", method_name)))
+   # Histogram (display only)
+   hist(as.numeric(Lambda), breaks = 50, 
+        main = sprintf("%s Posterior Mean Loadings", method_name))
    # Sparsity
    sparse_frac <- mean(abs(Lambda) < 0.05)
    cat(sprintf("[%s] Test-set MSE: %.4f | Fraction near-zero loadings (<0.05): %.2f\n",
                method_name, mse, sparse_frac))
    invisible(list(mse = mse, Lambda = Lambda, sparse_frac = sparse_frac))
 }
+
+
 
 # ---- Evaluate VI-MSFA ----
 evaluate_vimsfa <- function(fit_file, method_name) {
@@ -108,27 +105,21 @@ evaluate_vimsfa <- function(fit_file, method_name) {
    # Pad to match Stan format (add outcome row)
    Lambda <- rbind(rep(NA, ncol(Lambda)), Lambda)
    psi <- c(NA, psi)
-   # Prediction
-   # Just use mean factors, so will be approximate; only meaningful for X, not y
-   # No UQ, only mean estimates!
-   pred <- rep(NA, length(y_test))  # Not defined for outcome directly
-   mse <- NA  # No direct test-set prediction, just MSE on covariance recovery
-   # Heatmap
-   heatmap_file <- sprintf("%s_loadings_heatmap.png", method_name)
-   png(heatmap_file, width = 700, height = 600)
-   pheatmap(Lambda, cluster_rows = FALSE, cluster_cols = FALSE,
-            main = sprintf("%s Mean Factor Loadings", method_name))
-   dev.off()
-   # Histogram
-   hist_file <- sprintf("%s_loadings_hist.png", method_name)
-   png(hist_file, width = 600, height = 400)
+   # Prediction: not meaningful for y, so leave as NA
+   pred <- rep(NA, length(y_test))
+   mse <- NA
+   # ---- Heatmap (display only) ----
+   print(pheatmap::pheatmap(Lambda, cluster_rows = FALSE, cluster_cols = FALSE,
+                            main = sprintf("%s Mean Factor Loadings", method_name)))
+   # ---- Histogram (display only) ----
    hist(as.numeric(Lambda), breaks = 50, main = sprintf("%s Mean Loadings", method_name))
-   dev.off()
+   # ---- Sparsity ----
    sparse_frac <- mean(abs(Lambda[-1,]) < 0.05, na.rm = TRUE)
    cat(sprintf("[%s] Fraction near-zero loadings (<0.05): %.2f\n",
                method_name, sparse_frac))
    invisible(list(Lambda = Lambda, sparse_frac = sparse_frac))
 }
+
 
 # ---- Evaluate all ----
 mgps_out      <- evaluate_stan_fit(mgps_file, "MGPS")
