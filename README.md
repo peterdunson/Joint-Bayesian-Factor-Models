@@ -135,7 +135,7 @@ This repository contains simulation scripts and Stan implementations for sparse 
 
 ## Credits
 
-- **Sparse Bayesian Infinite Factor Model:** Bhattacharya & Dunson (2011, Biometrika) [[paper link]](https://academic.oup.com/biomet/article/98/2/291/207469)
+- **Sparse Bayesian Infinite Factor Model:** Bhattacharya & Dunson (2011, Biometrika) [[paper link]](https://academic.oup.com/biomet/article/98/2/291/1745561)
 - **TEB-FAR:** Palmer & Dunson (2025, arXiv) [[arXiv link]](https://arxiv.org/abs/2505.11351)
 - **Robust Sparse Bayesian Infinite Factor Model:** Lee, Jo, Lee (2022, Comput Stat) [[paper link]](https://link.springer.com/article/10.1007/s00180-022-01208-5)
 - **Horseshoe Factor Model:** Carvalho, Polson, Scott (2010, Biometrika) [[paper link]](https://www.jstor.org/stable/25734098)
