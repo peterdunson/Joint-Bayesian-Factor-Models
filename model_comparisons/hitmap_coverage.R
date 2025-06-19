@@ -28,7 +28,7 @@ for (j in 1:p) {
 # ---- Plot coverage heatmap ----
 pheatmap(
    coverage_matrix * 1,  # Convert logical to numeric (0/1)
-   color = c("grey", "grey12"),
+   color = c("grey90", "grey50"),
    cluster_rows = FALSE, cluster_cols = FALSE,
    legend_breaks = c(0,1), legend_labels = c("Not covered", "Covered"),
    main = sprintf("%s Per-Variable/Factor 95%% Coverage", model_name),
