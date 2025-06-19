@@ -6,7 +6,7 @@ set.seed(123)
 # -- Parameters --
 n_train <- 1000
 p <- 20
-k <- 8
+k <- 5
 rsquared <- 0.1      # Strength of y~X
 nonzero_coefs <- 12  # Number of nonzero betas
 
