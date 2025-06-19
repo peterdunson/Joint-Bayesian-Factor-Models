@@ -13,7 +13,7 @@ options(mc.cores = parallel::detectCores())
 Sys.setenv(SDKROOT = "/Library/Developer/CommandLineTools/SDKs/MacOSX15.5.sdk")
 
 # ---- CHOOSE SCENARIO ----
-scenario <- 1  # Change as needed
+scenario <- 2  # Change as needed
 
 # ---- Path to simulation data ----
 sim_path <- sprintf("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen%d_1000.rds", scenario)
