@@ -7,7 +7,7 @@ library(VIMSFA)
 library(pheatmap)
 
 # --- LOAD SIM DATA ---
-sim_path <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen1_1000.rds"
+sim_path <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen2_1000.rds"
 sim <- readRDS(sim_path)
 X_full <- sim$Y[, -1, drop=FALSE]   # predictors (n x p)
 y_full <- sim$Y[, 1]                # outcome (length n)
@@ -104,3 +104,22 @@ cat(sprintf("OLS:         %.4f\n", ols_mse))
 cat(sprintf("PCA+Regress: %.4f\n", pca_mse))
 cat(sprintf("VI-MSFA CAVI:%.4f\n", mse_cavi))
 cat(sprintf("VI-MSFA SVI: %.4f\n", mse_svi))
+
+
+# -------------- VI-MSFA CAVI: Sparsity and Visualizations --------------
+Lambda_cavi <- cavi_est$mean_lambda
+frac_nonzero_cavi <- mean(abs(Lambda_cavi) >= 0.05)
+cat(sprintf("[VI-MSFA CAVI] Fraction of non-zero loadings (>=0.05): %.2f\n", frac_nonzero_cavi))
+pheatmap(Lambda_cavi, cluster_rows=FALSE, cluster_cols=FALSE,
+         main="VI-MSFA (CAVI) Mean Factor Loadings")
+hist(as.numeric(Lambda_cavi), breaks=50, main="VI-MSFA (CAVI) Mean Loadings", xlab="Loading Value")
+
+# -------------- VI-MSFA SVI: Sparsity and Visualizations --------------
+Lambda_svi <- svi_est$mean_lambda
+frac_nonzero_svi <- mean(abs(Lambda_svi) >= 0.05)
+cat(sprintf("[VI-MSFA SVI] Fraction of non-zero loadings (>=0.05): %.2f\n", frac_nonzero_svi))
+pheatmap(Lambda_svi, cluster_rows=FALSE, cluster_cols=FALSE,
+         main="VI-MSFA (SVI) Mean Factor Loadings")
+hist(as.numeric(Lambda_svi), breaks=50, main="VI-MSFA (SVI) Mean Loadings", xlab="Loading Value")
+
+

@@ -5,7 +5,7 @@ set.seed(123)   # For reproducibility
 # ----- Parameters -----
 n_train <- 1000   # Training samples
 p <- 20          # Predictors (not counting outcome)
-K <- 10          # Latent factors
+K <- 5         # Latent factors
 
 # ----- Lambda: each col gets nonzeros in random rows (including y) -----
 nonzero_each_col <- 10

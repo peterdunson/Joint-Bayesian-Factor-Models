@@ -13,7 +13,7 @@ options(mc.cores = parallel::detectCores())
 Sys.setenv(SDKROOT = "/Library/Developer/CommandLineTools/SDKs/MacOSX15.5.sdk")
 
 # ---- CHOOSE SCENARIO ----
-scenario <- 1  # Change as needed
+scenario <- 2  # Change as needed
 
 # ---- Path to simulation data ----
 sim_path <- sprintf("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen%d_1000.rds", scenario)
@@ -61,10 +61,10 @@ fit <- sampling(
    object = mod,
    data = stan_data,
    chains = 4,
-   iter = 3000,
-   warmup = 1500,
+   iter = 4000,
+   warmup = 2000,
    seed = 42,
-   control = list(adapt_delta = 0.99, max_treedepth = 15)
+   control = list(adapt_delta = 0.99, max_treedepth = 20)
 )
 
 print(fit, pars = c("sigma2", "Lambda"), probs = c(0.1, 0.5, 0.9))

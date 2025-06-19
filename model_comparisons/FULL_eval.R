@@ -9,19 +9,19 @@ library(tidyverse)
 library(pheatmap)
 
 set.seed(42)
-scenario <- 1
+scenario <- 2
 n_train <- 1000
 K <- 5
 sim_dir <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations"
 
 # ---- File names ----
-sim_file <- sprintf("%s/sim_scen1_1000.rds", sim_dir)
-mgps_file <- sprintf("%s/mgps_fit_scen1_5.rds", sim_dir)
-ssl_file <- sprintf("%s/ssl_factor_fit_scen1_5.rds", sim_dir)
-horseshoe_file <- sprintf("%s/stan_horseshoe_fit_scen1_5.rds", sim_dir)
-tebfar_file <- sprintf("%s/stan_tebfar_fit_scen1_5.rds", sim_dir)
-vimsfa_cavi_file <- sprintf("%s/vimsfa_cavi_fit_scen1_5.rds", sim_dir)
-vimsfa_svi_file  <- sprintf("%s/vimsfa_svi_fit_scen1_5.rds", sim_dir)
+sim_file <- sprintf("%s/sim_scen2_1000.rds", sim_dir)
+mgps_file <- sprintf("%s/mgps_fit_scen2_5.rds", sim_dir)
+ssl_file <- sprintf("%s/ssl_factor_fit_scen2_5.rds", sim_dir)
+horseshoe_file <- sprintf("%s/stan_horseshoe_fit_scen2_5.rds", sim_dir)
+tebfar_file <- sprintf("%s/stan_tebfar_fit_scen2_5.rds", sim_dir)
+vimsfa_cavi_file <- sprintf("%s/vimsfa_cavi_fit_scen2_5.rds", sim_dir)
+vimsfa_svi_file  <- sprintf("%s/vimsfa_svi_fit_scen2_5.rds", sim_dir)
 
 # ---- Load simulation data ----
 sim <- readRDS(sim_file)
@@ -137,6 +137,9 @@ evaluate_stan_fit <- function(fit_file, method_name, Lambda_true = NULL) {
       }
    }
    invisible(list(mse = mse, Lambda = Lambda, sparse_frac = sparse_frac))
+   cat("Posterior Lambda dim: ", paste(dim(post$Lambda), collapse = " x "), "\n")
+   cat("True Lambda dim:      ", paste(dim(Lambda_true), collapse = " x "), "\n")
+
 }
 
 
@@ -159,3 +162,16 @@ cat("MGPS:      ", mgps_out$sparse_frac, "\n")
 cat("SSL:       ", ssl_out$sparse_frac, "\n")
 cat("Horseshoe: ", horseshoe_out$sparse_frac, "\n")
 cat("TEB-FAR:   ", tebfar_out$sparse_frac, "\n")
+
+
+
+# ---- Robust Model ----
+robust_file <- sprintf("%s/robust_factor_fit_scen2_5.rds", sim_dir)   # Update if you have a scen1 robust fit!
+robust_out <- evaluate_stan_fit(robust_file, "Robust", Lambda_true = Lambda_true)
+
+cat("Robust:    ", robust_out$mse, "\n")
+cat("Robust:    ", robust_out$sparse_frac, "\n")
+
+
+
+
