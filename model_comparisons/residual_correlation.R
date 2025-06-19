@@ -9,12 +9,12 @@ sim_file <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations
 #fit_file <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/mgps_fit_scen2_5.rds"
 fit_file <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/stan_tebfar_fit_scen2_5.rds"
 
-# --- Load simulation & posterior ---
+
 sim  <- readRDS(sim_file)
 fit  <- readRDS(fit_file)
 post <- rstan::extract(fit)
 
-# --- Prepare data matrix X (drop outcome) ---
+
 Y <- sim$Y                   # n x (p+1)
 X <- Y[, -1, drop = FALSE]   # n x p
 n <- nrow(X); p <- ncol(X)
@@ -73,13 +73,13 @@ for (k in 0:max_k) {
 }
 K_max <- length(avg_abs_cor) - 1
 
-# 1) Plot average absolute residual correlation
+# 1) average absolute residual correlation
 plot(0:K_max, avg_abs_cor, type = "b", pch = 19,
      xlab = "Number of Factors (k)",
      ylab = "Avg |Residual Correlation|",
      main = "Average Residual Correlation vs. k")
 
-# 2) Plot maximum absolute residual correlation
+# 2) maximum absolute residual correlation
 plot(0:K_max, max_abs_cor, type = "b", pch = 17, col = "blue",
      xlab = "Number of Factors (k)",
      ylab = "Max |Residual Correlation|",
