@@ -48,9 +48,9 @@ fit <- sampling(
    object = mod,
    data = stan_data,
    chains = 4, 
-   iter = 4000,
-   warmup = 2000,
-   seed = 42,
+   iter = 6000,
+   warmup = 3000,
+   seed = 12,
    control = list(adapt_delta = 0.99, max_treedepth = 15)
 )
 
