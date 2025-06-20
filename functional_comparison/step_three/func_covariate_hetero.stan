@@ -2,8 +2,8 @@
 // Functional MGPS factor model with time‐varying noise
 
 data {
-  int<lower=1> N;                // number of subjects
-  int<lower=1> n_obs;            // total number of observations
+  int<lower=1> N;               
+  int<lower=1> n_obs;            
   int<lower=1> J;                // number of covariates
   int<lower=1> H;                // max number of latent factors
   int<lower=1> M;                // number of spline basis functions

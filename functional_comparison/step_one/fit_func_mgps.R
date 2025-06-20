@@ -68,6 +68,12 @@ print(fit1,
       probs = c(0.1, 0.5, 0.9))
 
 
+# Save the fit object
+saveRDS(fit1, file = "fit1_direct_mgps.rds")
+
+# To load it back in later:
+# fit1 <- readRDS("fit1_direct_mgps.rds")
+
 
 
 post <- rstan::extract(fit1, permuted=TRUE)
