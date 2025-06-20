@@ -10,7 +10,7 @@ df_zlen <- content %>%
    rename(subj = id, time = agedays, y = zlen) %>%
    filter(!is.na(y), !is.na(zwei))
 
-t_grid <- seq(min(df_zlen$time), max(df_zlen$time), length = 50)
+t_grid <- seq(min(df_zlen$time), max(df_zlen$time), length = 20)
 
 # Fit per-subject smoothing spline and predict on grid
 smoothed_list <- df_zlen %>%
@@ -112,7 +112,7 @@ fit2 <- fit_func_mgps_covariate(
 
 print(fit2, pars = c("sigma_y", paste0("delta[", 1:3, "]")), probs = c(0.1, 0.5, 0.9))
 
-saveRDS(fit2, file = "fit2_covariate_adjusted_mgps.rds")
+saveRDS(fit2, file = "fit2_covariate_adjusted_mgps_USING_20.rds")
 
 #fit2 <- readRDS("fit2_covariate_adjusted_mgps.rds")
 
