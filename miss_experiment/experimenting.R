@@ -1,6 +1,9 @@
 library(rstan)
 library(ggplot2)
 
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+
 # ---- CHOOSE SCENARIO ----
 scenario <- 2   # Change this to 1, 2, or 3 as needed
 sim_path <- sprintf("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen%d_1000.rds", scenario)
@@ -24,10 +27,10 @@ fit_fa_x <- sampling(
    object = mod,
    data = stan_data_x,
    chains = 4,
-   iter = 4000,
-   warmup = 2000,
+   iter = 5000,
+   warmup = 2500,
    seed = 12,
-   control = list(adapt_delta = 0.99, max_treedepth = 12)
+   control = list(adapt_delta = 0.99, max_treedepth = 15)
 )
 post_x <- rstan::extract(fit_fa_x)
 eta_hat_x <- apply(post_x$eta, c(2,3), mean)    # n x K
@@ -43,10 +46,10 @@ fit_fa_joint <- sampling(
    object = mod,
    data = stan_data_joint,
    chains = 4,
-   iter = 4000,
-   warmup = 2000,
+   iter = 5000,
+   warmup = 2500,
    seed = 12,
-   control = list(adapt_delta = 0.99, max_treedepth = 12)
+   control = list(adapt_delta = 0.99, max_treedepth = 15)
 )
 post_joint <- rstan::extract(fit_fa_joint)
 eta_hat_joint <- apply(post_joint$eta, c(2,3), mean)            # n x K

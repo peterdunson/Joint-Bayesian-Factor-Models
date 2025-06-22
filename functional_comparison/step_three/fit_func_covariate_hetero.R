@@ -3,6 +3,8 @@ library(purrr)
 library(tidyr)
 library(splines)
 library(rstan)
+library(refund)
+data(content)
 
 # --- 1. Prepare smoothed functional data ---
 df_zlen <- content %>%
@@ -10,7 +12,7 @@ df_zlen <- content %>%
    rename(subj = id, time = agedays, y = zlen, zwei = zwei) %>%
    filter(!is.na(y), !is.na(zwei))
 
-t_grid <- seq(min(df_zlen$time), max(df_zlen$time), length = 50)
+t_grid <- seq(min(df_zlen$time), max(df_zlen$time), length = 20)
 
 # Smoothing spline per subject, predict on grid
 smoothed_list <- df_zlen %>%
@@ -48,7 +50,7 @@ Z_mat <- as.matrix(Z_df %>% select(sex, mean_zlen, mean_zwei))
 
 # --- 3. Stan wrapper for heteroskedastic model ---
 fit_func_mgps_cov_het <- function(df, Z_mat,
-                                  stan_file     = "func_mgps_cov_het.stan",
+                                  stan_file     = "func_covariate_hetero.stan",
                                   H             = 3,
                                   M             = 15,
                                   iter          = 2000,
@@ -82,11 +84,13 @@ fit_func_mgps_cov_het <- function(df, Z_mat,
    return(fit)
 }
 
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/functional_comparison/step_three")
+
 # --- 4. Fit the model ---
 fit3 <- fit_func_mgps_cov_het(
    df            = smoothed_long,
    Z_mat         = Z_mat,
-   stan_file     = "func_mgps_cov_het.stan",
+   stan_file     = "func_covariate_hetero.stan",
    H             = 3,
    M             = 15,
    iter          = 2000,
