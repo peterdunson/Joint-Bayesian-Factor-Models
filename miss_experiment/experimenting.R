@@ -58,6 +58,8 @@ cat(sprintf("  min BFMI  = %.3f\n", min(bfmi_x, na.rm=TRUE)))
 
 
 
+
+
 # ---- 2) Joint fit ----
 stan_data_j <- list(N = n, P = p,   K = K, Y = Y)
 fit_j       <- sampling(
