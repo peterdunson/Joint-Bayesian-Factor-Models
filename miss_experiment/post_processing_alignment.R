@@ -1,55 +1,41 @@
-library(GPArotation)
 library(ggplot2)
-library(bayesplot)
+library(reshape2)
+library(gridExtra)
 
-# 1) Load saved objects
-obj_x        <- readRDS("fit_Xonly_scen2_scale_all.rds")
-Lambda_x_hat <- obj_x$Lambda_hat
-fit_x        <- obj_x$fit
+# Load data
+sim <- readRDS("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen2_1000.rds")
+fit_res <- readRDS(sprintf("fit_Xonly_scen2_scale_all.rds"))
 
-obj_j        <- readRDS("fit_Joint_scen2_scale_all.rds")
-Lambda_j_hat <- obj_j$Lambda_hat
-fit_j        <- obj_j$fit
+# Extract estimated and true loadings (no alignment)
+Lambda_x_hat <- fit_res$Lambda_hat
+Lambda_true  <- sim$Lambda[-1, ]   # drop y, keep X only
 
-# 2) Varimax rotate the posterior means
-Lambda_x_vm <- varimax(Lambda_x_hat)$loadings
-Lambda_j_vm <- varimax(Lambda_j_hat)$loadings
+# Prepare data frames for plotting
+df_true <- melt(as.matrix(Lambda_true))
+colnames(df_true) <- c("Variable", "Factor", "Loading")
+df_true$Type <- "True"
 
-# 3) Threshold small loadings
-thresh <- 0.05
-Lambda_x_vm[ abs(Lambda_x_vm) < thresh ] <- 0
-Lambda_j_vm[ abs(Lambda_j_vm) < thresh ] <- 0
+df_est <- melt(as.matrix(Lambda_x_hat))
+colnames(df_est) <- c("Variable", "Factor", "Loading")
+df_est$Type <- "Estimated"
 
-# 4) Quick heatmaps of the rotated + thresholded loadings
-df_x <- reshape2::melt(Lambda_x_vm, varnames = c("Variable","Factor"), value.name = "Loading")
-df_x$Model <- "X-only"
-df_j <- reshape2::melt(Lambda_j_vm, varnames = c("Variable","Factor"), value.name = "Loading")
-df_j$Model <- "Joint"
-df_all <- rbind(df_x, df_j)
+df_true$Variable <- as.factor(df_true$Variable)
+df_est$Variable  <- as.factor(df_est$Variable)
 
-ggplot(df_all, aes(x=factor(Factor), y=factor(Variable), fill=Loading)) +
+# Make plots
+p1 <- ggplot(df_true, aes(x=Factor, y=Variable, fill=Loading)) +
    geom_tile() +
-   facet_wrap(~Model, ncol=2) +
-   scale_fill_gradient2(low="darkgreen", mid="white", high="darkred", midpoint=0) +
-   theme_minimal() +
-   labs(title="Rotated & Thresholded Loadings", x="Factor", y="Variable")
+   scale_fill_gradient2() +
+   ggtitle("True Loadings (X)") +
+   theme_minimal()
 
-# 5) Post-rotation diagnostics: density overlay of one loading
-post_array_x <- as.array(fit_x)
-post_array_j <- as.array(fit_j)
+p2 <- ggplot(df_est, aes(x=Factor, y=Variable, fill=Loading)) +
+   geom_tile() +
+   scale_fill_gradient2() +
+   ggtitle("Estimated Loadings (No Rotation)") +
+   theme_minimal()
 
-mcmc_dens_overlay(post_array_x, pars="Lambda_raw[1,1]") +
-   ggtitle("Chain mixing for Lambda_raw[1,1] (X-only)")
+gridExtra::grid.arrange(p1, p2, ncol=2)
 
-mcmc_dens_overlay(post_array_j, pars="Lambda_raw[1,1]") +
-   ggtitle("Chain mixing for Lambda_raw[1,1] (Joint)")
 
-# 6) Full Rhat / n_eff tables
-sum_x <- summary(fit_x)$summary
-sum_j <- summary(fit_j)$summary
 
-rhat_neff_x <- data.frame(Parameter=rownames(sum_x), Rhat=sum_x[,"Rhat"], n_eff=sum_x[,"n_eff"])
-rhat_neff_j <- data.frame(Parameter=rownames(sum_j), Rhat=sum_j[,"Rhat"], n_eff=sum_j[,"n_eff"])
-
-print(rhat_neff_x)
-print(rhat_neff_j)

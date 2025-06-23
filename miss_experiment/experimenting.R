@@ -2,6 +2,8 @@
 library(rstan)
 library(bayesplot)
 
+set.seed(15)
+
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
@@ -30,7 +32,7 @@ setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/miss_experiment")
 stan_data_x <- list(N=n, P=p_x, K=K, Y=X)
 fit_x       <- sampling(mod, data=stan_data_x,
                         chains=4, iter=6000, warmup=3000,
-                        seed=12, control=list(adapt_delta=0.98, max_treedepth=15))
+                        seed=12, control=list(adapt_delta=0.99, max_treedepth=15))
 
 # extract & summarize
 post_x       <- extract(fit_x)
@@ -66,8 +68,7 @@ rhat_neff <- data.frame(
    Rhat      = sum_x[,"Rhat"],
    n_eff     = sum_x[,"n_eff"]
 )
-# Print the whole thing (or head(rhat_neff) to see the first few)
-print(rhat_neff)
+
 
 
 # prints warning summary for divergences, treedepth, BFMI
@@ -83,8 +84,18 @@ print(rstan::get_bfmi(fit_x))
 
 
 
+library(shinystan)
+
+# Launch shinyStan (this will open a web app in your browser)
+launch_shinystan(fit_x)
 
 
+library(bayesplot)
+sum_x <- summary(fit_x)$summary
+worst_rhat <- sort(sum_x[,"Rhat"], decreasing=TRUE)
+top_pars <- names(worst_rhat)[1:3] # Top 6 worst-mixing
+
+mcmc_trace(as.array(fit_x), pars = top_pars)
 
 
 
@@ -122,3 +133,10 @@ cat("=== Joint model diagnostics ===\n")
 cat(sprintf("  max R̂    = %.3f\n", max_rhat_j))
 cat(sprintf("  min n_eff = %.0f\n",  min_ess_j))
 cat(sprintf("  min BFMI  = %.3f\n", min(bfmi_j, na.rm=TRUE)))
+
+
+
+library(shinystan)
+
+# Launch shinyStan (this will open a web app in your browser)
+launch_shinystan(fit_j)
