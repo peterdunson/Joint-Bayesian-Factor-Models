@@ -31,9 +31,20 @@ setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/miss_experiment")
 
 # ---- 2) Joint fit ----
 stan_data_j <- list(N=n, P=p, K=K, Y=Y)
-fit_j       <- sampling(mod, data=stan_data_j,
-                        chains=4, iter=6000, warmup=3000,
-                        seed=12, control=list(adapt_delta=0.99, max_treedepth=15))
+fit_j <- sampling(
+   mod,
+   data       = stan_data_j,
+   chains     = 4,
+   iter       = 15000,
+   warmup     = 7500,
+   seed       = 12,
+   init       = "random",
+   init_r     = 5,    # ← Uniform(−5,5) inits
+   control    = list(
+      adapt_delta   = 0.99,
+      max_treedepth = 15
+   )
+)
 
 # extract & summarize
 post_j       <- extract(fit_j)
@@ -46,7 +57,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = sprintf("fit_Joint_scen%d_scale_all.rds", scenario)
+   file = sprintf("fit_Joint_scen%d_scale_all_15k.rds", scenario)
 )
 
 # ---- Diagnostics: Joint ----

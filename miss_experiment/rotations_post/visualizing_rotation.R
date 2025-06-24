@@ -15,7 +15,7 @@ procrustes_res <- readRDS("fit_Joint_scen2_scale_all_procrustes_rotated.rds")
 Lambda_pr_hat <- procrustes_res$Lambda_pr_hat  # p × K matrix
 
 # ─── 3A) Simple heatmaps with pheatmap ────────────────────────────────────
-cols <- colorRampPalette(c("darkgreen","white","darkred"))(50)
+cols <- colorRampPalette(c("grey5","grey43","white"))(50)
 
 pheatmap(
    Lambda_vm_hat,
@@ -33,18 +33,4 @@ pheatmap(
    main         = "Procrustes‐Rotated Loadings"
 )
 
-# ─── 3B) (Optional) If you’d rather use ggplot2 ────────────────────────────
-# # helper to ggplot‐heat
-# plot_heatmap <- function(L, title) {
-#   mat <- as.matrix(L)
-#   df  <- melt(mat)
-#   names(df) <- c("Variable","Factor","Loading")
-#   ggplot(df, aes(x = Factor, y = Variable, fill = Loading)) +
-#     geom_tile() +
-#     scale_fill_gradient2(low="darkgreen", mid="white", high="darkred", midpoint=0) +
-#     theme_minimal() +
-#     labs(title = title, x = "Factor", y = "Variable")
-# }
-#
-# plot_heatmap(Lambda_vm_hat, "Varimax‐Rotated Loadings")
-# plot_heatmap(Lambda_pr_hat, "Procrustes‐Rotated Loadings")
+
