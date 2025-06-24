@@ -2,7 +2,7 @@
 library(rstan)
 library(bayesplot)
 
-set.seed(15)
+set.seed(19)
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -21,6 +21,7 @@ n   <- nrow(Y)
 p   <- ncol(Y)
 p_x <- ncol(X)
 K   <- 5
+K_max <- 5
 
 # ---- COMPILE MODEL ----
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/sparse_bayesian_infinite_factor_model")
@@ -35,8 +36,8 @@ fit_j <- sampling(
    mod,
    data       = stan_data_j,
    chains     = 4,
-   iter       = 15000,
-   warmup     = 7500,
+   iter       = 6000,
+   warmup     = 3000,
    seed       = 12,
    init       = "random",
    init_r     = 5,    # ← Uniform(−5,5) inits

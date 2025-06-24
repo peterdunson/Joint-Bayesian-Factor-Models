@@ -8,7 +8,7 @@ library(pheatmap)        # install.packages("pheatmap")
 sim         <- readRDS("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen2_1000.rds")
 Lambda_true <- sim$Lambda
 
-fit_unrot   <- readRDS("fit_Joint_scen2_scale_all.rds")
+fit_unrot   <- dat
 Lambda_hat  <- fit_unrot$Lambda_hat
 
 # 3) Threshold at 0.05

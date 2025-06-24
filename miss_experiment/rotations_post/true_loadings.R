@@ -9,7 +9,7 @@ Lambda_true <- sim$Lambda    # (p+1) × K
 
 # ─── 3) Load estimated loadings ────────────────────────────────────────────
 # 3a) Unrotated posterior‐mean
-fit_unrot <- readRDS("fit_Joint_scen2_scale_all.rds")
+fit_unrot <- dat
 Lambda_hat <- fit_unrot$Lambda_hat    # (p+1) × K
 
 # 3b) Varimax‐rotated posterior‐mean
