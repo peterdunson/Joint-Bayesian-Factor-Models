@@ -50,25 +50,11 @@ chain_dfs <- lapply(seq_along(fits), function(i) {
 })
 df_all <- do.call(rbind, chain_dfs)
 
-# ─── 7) Trace‐overlay for a few (j,k) pairs ───────────────────────────────
-# choose three pairs:
-pairs_to_plot <- subset(
-   df_all,
-   (Variable=="V5"&Factor=="F2") |
-      (Variable=="V8"&Factor=="F3") |
-      (Variable=="V1"&Factor=="F1")
-)
 
-p1 <- ggplot(pairs_to_plot, aes(x=Iteration, y=Loading, color=Chain)) +
-   geom_line(alpha=1) +
-   facet_wrap(~ Variable + Factor, scales="free_y", ncol=1) +
-   theme_minimal() +
-   labs(
-      title = "Overlayed Chains for Selected Loadings",
-      x     = "Iteration",
-      y     = "Loading"
-   )
-print(p1)
+
+
+
+
 
 
 
