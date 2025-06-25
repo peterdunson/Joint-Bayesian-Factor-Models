@@ -157,6 +157,78 @@ pheatmap(
 
 
 
+
+
+
+
+
+
+#NEWWWWW
+
+# ─── assume `post` (list with posterior samples) and `Lambda_true` are already in your workspace ────────────────
+
+p1 <- nrow(Lambda_true)
+K  <- ncol(Lambda_true)
+
+# 1) Preallocate matrices
+cover_mat <- matrix(FALSE,  nrow = p1, ncol = K)
+lower_mat <- matrix(NA_real_, nrow = p1, ncol = K)
+upper_mat <- matrix(NA_real_, nrow = p1, ncol = K)
+
+# 2) Compute 95% CIs and coverage
+for (j in seq_len(p1)) {
+   for (k in seq_len(K)) {
+      draws <- post$Lambda[, j, k]
+      ci    <- quantile(draws, c(0.025, 0.975))
+      lower_mat[j, k] <- ci[1]
+      upper_mat[j, k] <- ci[2]
+      cover_mat[j, k] <- (Lambda_true[j, k] >= ci[1] && Lambda_true[j, k] <= ci[2])
+   }
+}
+
+# 3) Build a label matrix "lower (true) upper"
+label_mat <- matrix(
+   paste0(
+      sprintf("%.2f", lower_mat), 
+      " (", sprintf("%.2f", Lambda_true), ") ", 
+      sprintf("%.2f", upper_mat)
+   ),
+   nrow = p1, ncol = K,
+   dimnames = list(
+      paste0("V", 1:p1),
+      paste0("F", 1:K)
+   )
+)
+
+# 4) Draw the heatmap
+library(pheatmap)
+# turn TRUE/FALSE into 1/0
+cover_num <- cover_mat * 1
+
+pheatmap(
+   cover_num,
+   color           = c("grey80", "grey13"),      # 0→grey, 1→navy
+   cluster_rows    = FALSE,
+   cluster_cols    = FALSE,
+   display_numbers = label_mat,
+   number_color    = "white",
+   main            = "95% CI Coverage & Interval Endpoints\nlower (true) upper"
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 fit <- if (inherits(obj, "stanfit")) obj else obj$fit
 library(shinystan)
 
