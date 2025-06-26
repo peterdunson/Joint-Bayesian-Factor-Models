@@ -9,7 +9,7 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
 # ---- CHOOSE SCENARIO ----
-scenario <- 2
+scenario <- 3
 sim_path <- sprintf(
    "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen%d_1000.rds",
    scenario
@@ -55,7 +55,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = sprintf("fit_Joint_scen%d_scale_all_randominit.rds", scenario)
+   file = sprintf("fit_Joint_scen%d_scale_all_randominit_3.rds", scenario)
 )
 
 # ---- 4) Diagnostics ----

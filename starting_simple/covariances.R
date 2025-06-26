@@ -60,3 +60,18 @@ hist(all_cpr, breaks=30, main="Distribution of Off-Diagonal Covariances (All Boo
 hist(lambda_mat[,1], breaks=30, main="Lambda_1 estimates (method of moments)", xlab="Estimated lambda_1")
 hist(lambda_mat[,2], breaks=30, main="Lambda_2 estimates (method of moments)", xlab="Estimated lambda_2")
 
+
+
+
+# Compute the sample correlation matrix
+R_obs <- cor(Y)
+
+# Get all off-diagonal correlations
+off_diag_corrs <- R_obs[lower.tri(R_obs)]
+
+# Plot the histogram
+hist(off_diag_corrs, breaks=30, main="Distribution of Pairwise Correlations", xlab="Correlation")
+
+# Optional: summary stats
+summary(off_diag_corrs)
+
