@@ -8,8 +8,8 @@ dsc <- function(corrs, mu2, sd2, sk2, ku2) {
    sd1 <- sd(corrs)
    sk1 <- if (sd1 < 1e-12) 0 else mean((corrs - mu1)^3) / sd1^3
    ku1 <- if (sd1 < 1e-12) 0 else mean((corrs - mu1)^4) / sd1^4
-   sk_diff <- (sign(sk1) * abs(sk1)^(1/3)) - (sign(sk2) * abs(sk2)^(1/3))
-   ku_diff <- (sign(ku1) * abs(ku1)^(1/4)) - (sign(ku2) * abs(ku2)^(1/4))
+   sk_diff <- abs(sk1)^(1/3) - abs(sk2)^(1/3)
+   ku_diff <- abs(ku1)^(1/4) - abs(ku2)^(1/4)
    sqrt((mu1 - mu2)^2 + (sd1 - sd2)^2 + sk_diff^2 + ku_diff^2)
 }
 

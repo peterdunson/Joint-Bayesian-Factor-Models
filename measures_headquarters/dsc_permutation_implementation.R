@@ -1,7 +1,7 @@
 # ─── Paths ────────────────────────────────────────────────────────────────────
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/miss_experiment")
-sim_path2 <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen1_1000.rds"
-fit_path2 <- "fit_Joint_scen1_scale_all_randominit_1.rds"
+sim_path2 <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen2_1000.rds"
+fit_path2 <- "fit_Joint_scen2_scale_all_randominit.rds"
 
 # ─── 1) Load data ─────────────────────────────────────────────────────────────
 sim2      <- readRDS(sim_path2)
@@ -32,7 +32,7 @@ res_resid$dsc_resid_stats
 
 
 hist(res_resid$dsc_null,
-     breaks = 200,
+     breaks = 100,
      main   = "Null Distribution of Residual DSC",
      xlab   = "DSC under Permutation Null",
      col    = "lightgray",
@@ -96,7 +96,7 @@ z_perm  <- replicate(B, {
 # 3) Plot
 hist(z_perm,
      prob    = TRUE,
-     breaks  = 100,
+     breaks  = 200,
      main    = "Permutation vs. Theoretical Null of Fisher-Z Correlations",
      xlab    = "Fisher-Z of r",
      col     = "lightgray",

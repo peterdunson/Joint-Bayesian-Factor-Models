@@ -59,8 +59,8 @@ dsc_skew_kurt <- function(corrs, mu2 = 0, sd2 = NULL, sk2 = 0, ku2 = 0, n = NULL
       if (is.null(n)) stop("Need n (sample size) if sd2 is not given")
       sd2 <- 1 / sqrt(n - 3)
    }
-   sk_diff <- (sign(sk1) * abs(sk1)^(1/3)) - (sign(sk2) * abs(sk2)^(1/3))
-   ku_diff <- (sign(ku1) * abs(ku1)^(1/4)) - (sign(ku2) * abs(ku2)^(1/4))
+   sk_diff <- abs(sk1)^(1/3) - abs(sk2)^(1/3)
+   ku_diff <- abs(ku1)^(1/4) - abs(ku2)^(1/4)
    D <- sqrt((mu1 - mu2)^2 + (sd1 - sd2)^2 + sk_diff^2 + ku_diff^2)
    return(list(
       DSC = D, mu1 = mu1, sd1 = sd1, sk1 = sk1, ku1 = ku1,
