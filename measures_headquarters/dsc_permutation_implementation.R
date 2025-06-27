@@ -1,7 +1,7 @@
 # ─── Paths ────────────────────────────────────────────────────────────────────
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/miss_experiment")
-sim_path2 <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen2_1000.rds"
-fit_path2 <- "fit_Joint_scen2_scale_all_randominit.rds"
+sim_path2 <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen1_1000.rds"
+fit_path2 <- "fit_Joint_scen1_scale_all_randominit_1.rds"
 
 # ─── 1) Load data ─────────────────────────────────────────────────────────────
 sim2      <- readRDS(sim_path2)
@@ -32,7 +32,7 @@ res_resid$dsc_resid_stats
 
 
 hist(res_resid$dsc_null,
-     breaks = 50,
+     breaks = 200,
      main   = "Null Distribution of Residual DSC",
      xlab   = "DSC under Permutation Null",
      col    = "lightgray",
@@ -55,7 +55,7 @@ legend("topright",
 
 
 hist(res_obs$dsc_null,
-     breaks = 30,
+     breaks = 200,
      main   = "Null Distribution of Observed Correlation DSC",
      xlab   = "DSC under Permutation Null",
      col    = "lightgray",
@@ -72,4 +72,48 @@ legend("topright",
        col    = "blue",
        lwd    = 2,
        bty    = "n")
+
+
+
+
+
+
+
+
+
+# 1) Compute residuals
+eta_hat <- Y2 %*% Lambda2 %*% solve(t(Lambda2) %*% Lambda2)
+resid   <- Y2 - (eta_hat %*% t(Lambda2))
+n       <- nrow(resid)
+
+# permutation null of z’s
+B       <- 10000
+z_perm  <- replicate(B, {
+   Rp   <- apply(resid, 2, sample)
+   cor(Rp)[lower.tri(cor(Rp))]
+}) %>% as.vector() %>% fisher_z()
+
+# 3) Plot
+hist(z_perm,
+     prob    = TRUE,
+     breaks  = 100,
+     main    = "Permutation vs. Theoretical Null of Fisher-Z Correlations",
+     xlab    = "Fisher-Z of r",
+     col     = "lightgray",
+     border  = "white")
+
+# 4) Overlay N(0, 1/(n−3))
+curve(dnorm(x, mean = 0, sd = 1/sqrt(n-3)),
+      col   = "blue",
+      lwd   = 2,
+      add   = TRUE)
+
+legend("topright",
+       legend = c("Perm. null", sprintf("Theoretical N(0,1/(n-3))")),
+       fill   = c("lightgray", NA),
+       border = c(NA, NA),
+       lty    = c(NA,1),
+       col    = c(NA,"blue"),
+       bty    = "n")
+
 
