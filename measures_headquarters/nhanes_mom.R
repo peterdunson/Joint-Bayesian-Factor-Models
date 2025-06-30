@@ -32,8 +32,6 @@ cor_after  <- cor(resid1)
 
 
 
-
-
 # --- Compute off-diagonal correlations ---
 get_offdiag <- function(M) M[lower.tri(M)]
 cor_before <- cor(X)
@@ -133,7 +131,7 @@ legend("topright", legend = "Observed DSC", col = "red", lwd = 2, bty = "n")
 
 
 
-
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/applications")
 
 
 
@@ -145,7 +143,7 @@ legend("topright", legend = "Observed DSC", col = "red", lwd = 2, bty = "n")
 Y <- scale(dat, center = TRUE, scale = TRUE)    # n x p
 
 # 2. Load Stan fit and extract Lambda_hat (p x K)
-fit_obj <- readRDS("fit_Joint_NHANES2017_phthalates_scale_all_randominit.rds")
+fit_obj <- readRDS("fit_Joint_NHANES1718.rds")
 Lambda_hat <- fit_obj$Lambda_hat
 if (nrow(Lambda_hat) != ncol(Y)) Lambda_hat <- t(Lambda_hat)
 
@@ -194,6 +192,17 @@ cat("Mean abs off-diagonal correlation AFTER:  ", mean(abs(r_after)), "\n")
 
 
 
+
+
+
+
+
+
+
+
+
+
+
 # --- K=1 ---
 
 # 1. Load K=1 Stan fit
@@ -206,16 +215,33 @@ eta_hat1 <- Y %*% Lambda_hat1 %*% solve(t(Lambda_hat1) %*% Lambda_hat1)   # n x 
 Y_hat1   <- eta_hat1 %*% t(Lambda_hat1)                                  # n x p
 resid1   <- Y - Y_hat1
 
-# 3. Compute off-diagonal correlations
+# --- Compute "before" (raw data) off-diagonal correlations ---
+cor_before <- cor(Y)
+get_offdiag <- function(mat) mat[lower.tri(mat)]  # Utility to get off-diags
+r_before <- get_offdiag(cor_before)
+
+# --- K=1 ---
+
+# 1. Load K=1 Stan fit
+fit_obj1 <- readRDS("fit_Joint_NHANES1718_1.rds")
+Lambda_hat1 <- fit_obj1$Lambda_hat
+if (nrow(Lambda_hat1) != ncol(Y)) Lambda_hat1 <- t(Lambda_hat1)
+
+# 2. Project out the fitted K=1 factor
+eta_hat1 <- Y %*% Lambda_hat1 %*% solve(t(Lambda_hat1) %*% Lambda_hat1)   # n x 1
+Y_hat1   <- eta_hat1 %*% t(Lambda_hat1)                                  # n x p
+resid1   <- Y - Y_hat1
+
+# 3. Compute off-diagonal correlations after K=1
 cor_after1 <- cor(resid1)
 r_after1 <- get_offdiag(cor_after1)
 
-# 4. Plot overlayed histograms (before, after K=1, after K=5)
+# 4. Plot overlayed histograms (before and after K=1)
 breaks <- seq(-1, 1, length.out = 41)
 hist(r_before,
      breaks = breaks,
      col = rgb(0.2, 0.4, 1, 0.4),
-     main = "Off-diagonal correlations\nBefore / K=1 / K=5",
+     main = "Off-diagonal correlations\nBefore / After K=1",
      xlab = "Correlation",
      ylab = "Frequency",
      border = "white")
@@ -224,26 +250,12 @@ hist(r_after1,
      col = rgb(1, 0.7, 0.2, 0.5),    # orange
      add = TRUE,
      border = "white")
-hist(r_after,
-     breaks = breaks,
-     col = rgb(1, 0.4, 0.4, 0.5),
-     add = TRUE,
-     border = "white")
 legend("topright",
-       legend = c("Before", "After K=1", "After K=5"),
-       fill = c(rgb(0.2, 0.4, 1, 0.4), rgb(1, 0.7, 0.2, 0.5), rgb(1, 0.4, 0.4, 0.5)),
+       legend = c("Before", "After K=1"),
+       fill = c(rgb(0.2, 0.4, 1, 0.4), rgb(1, 0.7, 0.2, 0.5)),
        border = NA)
 
-# 5. Print summary statistics for K=1 as well
+# 5. Print summary statistics for K=1
 cat("\nSummary of off-diagonal correlations AFTER K=1 Bayesian fit:\n")
 print(summary(r_after1))
-
 cat("\nMean abs off-diagonal correlation AFTER K=1:  ", mean(abs(r_after1)), "\n")
-
-
-
-
-
-
-
-

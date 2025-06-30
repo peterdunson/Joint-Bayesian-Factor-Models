@@ -25,7 +25,7 @@ K   <- 1
 # ---- COMPILE MODEL ----
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/sparse_bayesian_infinite_factor_model")
 mod <- stan_model("mgps_factor_model.stan")
-setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/miss_experiment")
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit")
 
 # ---- 2) Joint fit with random initial values ----
 stan_data_j <- list(N = n, P = p, K = K, Y = Y)
@@ -34,8 +34,8 @@ fit_j <- sampling(
    object       = mod,
    data         = stan_data_j,
    chains       = 4,
-   iter         = 12000,
-   warmup       = 6000,
+   iter         = 16000,
+   warmup       = 8000,
    seed         = 19,
    init         = "random",    # random inits
    init_r       = 2,           # uniform(−2,2)
@@ -55,7 +55,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = sprintf("fit_Joint_scen%d_scale_all_randominit_3.rds", scenario)
+   file = sprintf("fit_joint_scen%d_k1.rds", scenario)
 )
 
 # ---- 4) Diagnostics ----
@@ -72,4 +72,3 @@ cat(sprintf("  min BFMI  = %.3f\n", min(bfmi_j, na.rm = TRUE)))
 # ---- 5) Launch ShinyStan ----
 library(shinystan)
 launch_shinystan(fit_j)
-

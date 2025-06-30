@@ -5,7 +5,7 @@ set.seed(123)   # For reproducibility
 # ----- Parameters -----
 n_train <- 1000   # Training samples
 p       <- 20     # Predictors (not counting outcome)
-K       <- 5      # Latent factors
+K       <- 1      # Latent factors
 
 # ----- Lambda: each col gets nonzeros in random rows (including y) -----
 nonzero_each_col <- 10
@@ -49,6 +49,6 @@ saveRDS(
       Lambda = Lambda,  # True loadings
       eta    = eta      # True latent factors [n × K]
    ),
-   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen2_1000.rds"
+   file = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/simulations/sim_scen2_1000_1.rds"
 )
 

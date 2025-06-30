@@ -5,8 +5,6 @@ p <- ncol(Y)
 K <- 1  # Set as desired (number of factors)
 
 
-
-
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/sparse_bayesian_infinite_factor_model")
 library(rstan)
 mod <- stan_model("mgps_factor_model.stan")
@@ -22,8 +20,8 @@ fit_j <- sampling(
   object       = mod,
   data         = stan_data_j,
   chains       = 4,
-  iter         = 12000,
-  warmup       = 6000,
+  iter         = 16000,
+  warmup       = 8000,
   seed         = 19,
   init         = "random",    # random inits
   init_r       = 2,           # uniform(−2,2)
@@ -43,7 +41,7 @@ saveRDS(
     posterior  = post_j,
     Lambda_hat = Lambda_j_hat
   ),
-  file = "fit_Joint_NHANES1718.rds"
+  file = "fit_Joint_NHANES1718_1.rds"
 )
 
 
