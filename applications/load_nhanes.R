@@ -55,8 +55,8 @@ dat <- phthalates_adults[, setdiff(names(phthalates_adults), c("SEQN", "RIDAGEYR
 
 
 # This will open a window and plot the scatterplot matrix (may be slow for 19 variables)
-pairs(dat, pch = 20, cex = 0.5, main = "Scatterplot Matrix: NHANES 2017-18 Phthalates")
+#pairs(dat, pch = 20, cex = 0.5, main = "Scatterplot Matrix: NHANES 2017-18 Phthalates")
 
 
-getwd()
+#getwd()
 
