@@ -2,7 +2,7 @@
 Y <- scale(dat, center = TRUE, scale = TRUE)
 n <- nrow(Y)
 p <- ncol(Y)
-K <- 5  # Set as desired (number of factors)
+K <- 1  # Set as desired (number of factors)
 
 
 

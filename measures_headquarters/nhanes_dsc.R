@@ -9,14 +9,14 @@ Lambda_hat <- fit_obj$Lambda_hat
 if (nrow(Lambda_hat) != ncol(Y)) Lambda_hat <- t(Lambda_hat)
 
 # ---- 3. DSC for observed ----
-dsc_obs_result <- dsc_with_permutation_null_obs(Y, B = 500)   # B = 500 or higher for stability
+dsc_obs_result <- dsc_with_permutation_null_obs(Y, B = 1000)  
 
 cat("DSC (Observed): ", dsc_obs_result$dsc_obs, "\n")
 cat("Permutation null mean: ", mean(dsc_obs_result$dsc_null), "\n")
 cat("Permutation null 95% range: ", quantile(dsc_obs_result$dsc_null, c(0.025, 0.975)), "\n")
 
 # ---- 4. DSC for residuals ----
-dsc_resid_result <- dsc_with_permutation_null_resid(Y, Lambda_hat, B = 500)
+dsc_resid_result <- dsc_with_permutation_null_resid(Y, Lambda_hat, B = 1000)
 
 cat("DSC (Residuals): ", dsc_resid_result$dsc_resid, "\n")
 cat("Permutation null mean: ", mean(dsc_resid_result$dsc_null), "\n")
