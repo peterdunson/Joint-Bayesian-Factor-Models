@@ -1,5 +1,19 @@
 # Bayesian Factor Models
 
+**UPDATE COMING SOON**
+
+
+
+
+
+
+
+
+
+
+
+
+
 This repository contains simulation scripts and Stan implementations for **sparse Bayesian infinite factor models**, **targeted empirical bayes for supervised joint factor analysis (TEB-FAR)**, **robust and heavy-tailed factor models**, **horseshoe factor models**, and **continuous spike-and-slab lasso (SSL) factor models**. It includes tools for model comparison and simulation-based benchmarking.
 
 ---
