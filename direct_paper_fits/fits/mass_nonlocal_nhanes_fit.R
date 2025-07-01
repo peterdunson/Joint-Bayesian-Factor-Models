@@ -68,7 +68,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = "fit_spikepmom_NHANES1718_k1.rds"
+   file = "fit_mass_nonlocal_NHANES1718_k1.rds"
 )
 
 sum_j      <- summary(fit_j)$summary

@@ -27,8 +27,8 @@ b_theta <- 5
 a_sigma <- 1.0  # Gamma prior for sigma2
 b_sigma <- 0.3
 nu      <- 3    # Degrees of freedom for local shrinkage (MGPS)
-a1      <- 2.1  # MGPS prior (delta[1])
-a2      <- 3.1  # MGPS prior (delta[2:K])
+a1      <- 2.1  # MGSP prior (delta[1])
+a2      <- 3.1  # MGSP prior (delta[2:K])
 psi     <- 1    # Dispersion parameter for pMOM
 spike_sd <- 1e-4  # Continuous spike std dev
 
@@ -48,7 +48,7 @@ stan_data_j <- list(
    spike_sd = spike_sd
 )
 
-mod <- stan_model("spike_pmom_factor_model.stan")
+mod <- stan_model("mass_nonlocal.stan")
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit/mass_nonlocal")
 
 fit_j <- sampling(
@@ -75,7 +75,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = sprintf("fit_spikepmom_scen%d_k1.rds", scenario)
+   file = sprintf("fit_mass_nonlocal_scen%d_k1.rds", scenario)
 )
 
 sum_j      <- summary(fit_j)$summary
