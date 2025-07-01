@@ -27,6 +27,10 @@ cor_after_MoM <- cor(resid1_MoM)
 r_before <- get_offdiag(cor_before)
 r_after_MoM <- get_offdiag(cor_after_MoM)
 
+cat("Mean absolute off-diagonal correlation (MoM):\n")
+cat("   Before K=1:", round(mean(abs(r_before)), 4), "\n")
+cat("   After  K=1:", round(mean(abs(r_after_MoM)), 4), "\n")
+
 # ---- MoM DSC with permutation null ----
 set.seed(42)
 res_dsc_before <- dsc_with_permutation_null_obs(X, B = 500)
@@ -62,16 +66,15 @@ legend("topright", legend = "Observed DSC", col = "red", lwd = 2, bty = "n")
 model_names <- c("MGSP", "HS", "SSL", "MASS", "Robust")
 fit_list <- list(fit_MGSP, fit_HS, fit_SSL, fit_MASS, fit_RobustMGSP)
 
-par(mfrow = c(2, 3), mar = c(4,4,2,1))
 for (i in seq_along(model_names)) {
    Lambda_hat <- fit_list[[i]]$Lambda_hat
    eta_hat <- X %*% Lambda_hat %*% solve(t(Lambda_hat) %*% Lambda_hat)
    resid_bayes <- X - eta_hat %*% t(Lambda_hat)
    r_after_bayes <- get_offdiag(cor(resid_bayes))
+   cat("\nMean abs off-diagonal correlation (", model_names[i], "):\n", sep = "")
+   cat("   After K=1:", round(mean(abs(r_after_bayes)), 4), "\n")
    hist(r_before, breaks = 40, col = rgb(0.2,0.4,1,0.4), main = paste(model_names[i], "Before/After"), xlab = "Correlation", border = "white")
    hist(r_after_bayes, breaks = 40, col = rgb(1,0.7,0.2,0.5), add = TRUE, border = "white")
    legend("topright", legend = c("Before", "After K=1"), fill = c(rgb(0.2,0.4,1,0.4), rgb(1,0.7,0.2,0.5)), border = NA)
 }
 par(mfrow = c(1,1))
-
-# (Optional) Print summary stats for MoM and Bayesian models if needed
