@@ -75,3 +75,24 @@ library(moments)
 cat(sprintf("Mean: %.3f  SD: %.3f  Skew: %.3f  Kurtosis: %.3f\n",
             mean(b_hat), sd(b_hat), skewness(b_hat), kurtosis(b_hat)))
 
+
+
+# --- Correlation matrix: print and heatmap (using your color scheme) ---
+cor_mat <- cor(X)
+rounded_cor <- round(cor_mat, 3)
+
+cat("Empirical correlation matrix:\n")
+print(rounded_cor)
+
+library(pheatmap)
+pheatmap(
+   rounded_cor,
+   color = colorRampPalette(c("white", "pink", "red"))(100),
+   main = "Correlation Matrix Heatmap Sim2",
+   display_numbers = TRUE,
+   number_color = "black",
+   cluster_rows = FALSE,
+   cluster_cols = FALSE
+)
+
+
