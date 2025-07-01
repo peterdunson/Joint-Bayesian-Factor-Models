@@ -1,3 +1,6 @@
+// spike_pmom_factor_model.stan
+// Sparse Bayesian factor model with MGSP prior on loadings and
+// spike-and-pMOM prior on factor scores (continuous spike, Stan compatible)
 
 data {
     int<lower=1> N;            // Number of samples
@@ -14,6 +17,7 @@ data {
     real<lower=0> a1;          // MGPS prior
     real<lower=0> a2;          // MGPS prior
     real<lower=0> psi;         // Dispersion parameter for pMOM
+    real<lower=0> spike_sd;    // Standard deviation for the "continuous spike"
 }
 
 parameters {
@@ -26,16 +30,12 @@ parameters {
     // Local and global shrinkage for MGPS
     matrix<lower=0>[P, K] phi;     // local
     vector<lower=0>[K] delta;      // global, cumulative product
-    // MGPS global shrinkage: tau_h = prod_{l=1}^h delta_l
 
     // Variance
     vector<lower=0>[P] sigma2;
 
     // Mixture weight for factor scores
     vector<lower=0, upper=1>[K] theta;  // Bernoulli prob for each factor
-
-    // pMOM slab parameters (can be fixed or learned)
-    // real<lower=0> psi[K]; // fixed for simplicity, or can be parameterized
 }
 
 transformed parameters {
@@ -64,16 +64,15 @@ model {
     // Theta (sparsity)
     theta ~ beta(a_theta, b_theta);
 
-    // --- Factor scores: mixture prior (spike at 0 + pMOM slab) ---
-    // Marginalize the spike-and-pMOM prior for eta_ih
+    // --- Factor scores: mixture prior (continuous spike + pMOM slab) ---
     for (h in 1:K) {
         for (i in 1:N) {
             target += log_mix(theta[h],
                 // pMOM slab: eta_ih ~ pMOM(psi)
                 // Density: (1/sqrt(2 * pi * psi^3)) * exp(-eta^2/(2*psi)) * eta^2
                 log(1 / sqrt(2 * pi() * psi^3)) - 0.5 * square(eta[i, h]) / psi + 2 * log(fabs(eta[i, h])),
-                // Spike at zero:
-                eta[i, h] == 0 ? 0 : negative_infinity()
+                // Continuous spike at zero:
+                normal_lpdf(eta[i, h] | 0, spike_sd)
             );
         }
     }
@@ -83,7 +82,6 @@ model {
         Y[i] ~ multi_normal(Lambda * eta[i]', diag_matrix(sigma2));
     }
 }
-
 
 
 

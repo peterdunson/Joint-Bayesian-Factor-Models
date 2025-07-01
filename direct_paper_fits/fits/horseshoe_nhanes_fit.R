@@ -38,7 +38,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = "fit_HS_NHANES1718_k1.rds"  # Name reflects horseshoe prior
+   file = "fit_HS_NHANES1718_k1.rds"
 )
 
 sum_j      <- summary(fit_j)$summary
