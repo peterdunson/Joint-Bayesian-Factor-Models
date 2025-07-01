@@ -15,17 +15,17 @@ sim_path <- sprintf(
 sim <- readRDS(sim_path)
 
 # ---- CENTER & SCALE DATA ----
-Y   <- scale(sim$Y,   center = TRUE, scale = TRUE)
+Y   <- scale(sim$Y, center = TRUE, scale = TRUE)
 n   <- nrow(Y)
 p   <- ncol(Y)
 K   <- 1
 
 # ---- COMPILE MODEL ----
-setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/sparse_bayesian_infinite_factor_model")
-mod <- stan_model("mgps_factor_model.stan")
-setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit")
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/horseshoe_estimator")
+mod <- stan_model("horseshoe_factor_model.stan")
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit/horseshoe")
 
-# ---- 2) Joint fit with random initial values ----
+# ---- Joint fit with random initial values ----
 stan_data_j <- list(N = n, P = p, K = K, Y = Y)
 
 fit_j <- sampling(
@@ -43,7 +43,7 @@ fit_j <- sampling(
    )
 )
 
-# ---- 3) Extract & summarize ----
+# ---- Extract & summarize ----
 post_j       <- extract(fit_j)
 Lambda_j_hat <- apply(post_j$Lambda, c(2,3), mean)
 
@@ -53,20 +53,22 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = sprintf("fit_joint_scen%d_k1.rds", scenario)
+   file = sprintf("fit_horseshoe_scen%d_k1.rds", scenario)
 )
 
-# ---- 4) Diagnostics ----
+# ---- Diagnostics ----
 sum_j      <- summary(fit_j)$summary
 max_rhat_j <- max(sum_j[,"Rhat"],   na.rm = TRUE)
-min_ess_j  <- min(sum_j[,"n_eff"], na.rm = TRUE)
+min_ess_j  <- min(sum_j[,"n_eff"],  na.rm = TRUE)
 bfmi_j     <- rstan::get_bfmi(fit_j)
 
-cat("=== Joint model diagnostics ===\n")
+cat("=== Horseshoe model diagnostics ===\n")
 cat(sprintf("  max R̂    = %.3f\n", max_rhat_j))
 cat(sprintf("  min n_eff = %.0f\n",  min_ess_j))
 cat(sprintf("  min BFMI  = %.3f\n", min(bfmi_j, na.rm = TRUE)))
 
-# ---- 5) Launch ShinyStan ----
-library(shinystan)
-launch_shinystan(fit_j)
+# # ---- Launch ShinyStan (optional) ----
+# if (interactive()) {
+#    library(shinystan)
+#    launch_shinystan(fit_j)
+# }
