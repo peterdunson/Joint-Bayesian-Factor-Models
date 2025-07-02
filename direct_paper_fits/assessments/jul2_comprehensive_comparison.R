@@ -1,3 +1,6 @@
+
+#k=1 comparison NHANES, MoM (trio and eigen), MGSP, Horseshoe, Spike-Slab
+
 # Load fits
 fit_dir <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit"
 fit_MGSP <- readRDS(file.path(fit_dir, "MGSP", "fit_joint_NHANES1718_k1.rds"))
