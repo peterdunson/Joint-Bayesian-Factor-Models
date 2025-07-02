@@ -74,9 +74,6 @@ for (j in 1:3) {
 
 
 
-
-
-
 # --- Function for epsilons (residuals for variable j)
 epsi <- function(j, X, lambda1, b_hat) {
    X[,j] - lambda1[j] * b_hat
