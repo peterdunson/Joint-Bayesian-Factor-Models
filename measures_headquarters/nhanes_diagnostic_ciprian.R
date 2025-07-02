@@ -267,14 +267,48 @@ barplot(as.numeric(cor_b1), names.arg = colnames(X), main = "Correlation of b_i 
 barplot(as.numeric(cor_b2), names.arg = colnames(X), main = "Correlation of b_i (Pairwise) with X_p", las = 2)
 barplot(as.numeric(cor_bnz), names.arg = colnames(X), main = "Correlation of b_i (NZ) with X_p", las = 2)
 
-# ---- 3. HEATMAP: Fitted X (b_i * lambda_p), e.g. Trio estimator ----
-library(pheatmap)
-# Just the first 50 rows
-n_show <- min(50, nrow(X_fit1))
-pheatmap(
-   X_fit1[1:n_show, ],
-   cluster_rows = FALSE,
-   cluster_cols = FALSE,
-   main = "Fitted X (First 50 subjects)"
-)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+get_offdiag <- function(M) M[lower.tri(M)]
+
+# Original data off-diagonal correlations
+r_obs <- get_offdiag(cor(X))
+
+# MoM decorrelated residuals
+X_fit_mom <- outer(b_hat1, lambda_est1)
+resid_mom <- X - X_fit_mom
+r_mom <- get_offdiag(cor(resid_mom))
+
+# If you have a Bayesian fit, e.g.:
+# Lambda_bayes <- fit_MGSP$Lambda_hat
+# eta_bayes   <- X %*% Lambda_bayes %*% solve(t(Lambda_bayes) %*% Lambda_bayes)
+# X_fit_bayes <- eta_bayes %*% t(Lambda_bayes)
+# resid_bayes <- X - X_fit_bayes
+# r_bayes     <- get_offdiag(cor(resid_bayes))
+
+# Combine for plotting
+breaks <- seq(-1, 1, length.out = 41)
+hist(r_obs, breaks = breaks, col = rgb(0.3,0.4,1,0.5), border = "white",
+     main = "Off-diagonal Correlations: NHANES",
+     xlab = "Correlation", xlim = c(-1, 1))
+hist(r_mom, breaks = breaks, col = rgb(1,0.4,0.3,0.5), add = TRUE, border = "white")
+# hist(r_bayes, breaks = breaks, col = rgb(0.3,1,0.4,0.4), add = TRUE, border = "white") # optional
+
+legend("topright",
+       legend = c("Original", "MoM Residuals"), # , "Bayesian Residuals"),
+       fill = c(rgb(0.3,0.4,1,0.5), rgb(1,0.4,0.3,0.5)), # , rgb(0.3,1,0.4,0.4)),
+       border = NA)

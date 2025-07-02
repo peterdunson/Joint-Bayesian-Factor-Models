@@ -10,7 +10,7 @@ X <- scale(sim2$Y, center = TRUE, scale = TRUE)   # n x p
 n <- nrow(X)
 p <- ncol(X)
 
-# 2. Compute covariance and correlation matrices
+# 2. Compute Aacovariance and correlation matrices
 S <- cov(X)
 C <- cor(X)
 
