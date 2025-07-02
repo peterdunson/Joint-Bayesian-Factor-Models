@@ -1,5 +1,7 @@
 # Full evaluation script: load simulation, fits, compute estimators on all variables, compare to truth, and plot
 
+#k=1 comparison simulation, MoM (trio and eigen), MGSP, Horseshoe, Spike-Slab
+
 # ---- CHOOSE SCENARIO ----
 scenario <- 2
 sim_path <- sprintf(
