@@ -1,0 +1,349 @@
+---
+title: "assessment"
+output:
+  html_document:
+    code_folding: hide
+---
+
+# ==============================================
+# Ciprian‐style K=1 Simulation Analysis (MoM only)
+# ==============================================
+
+```{r}
+
+# 1) Load the fixed‐λ simulation
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
+sim <- readRDS("sim_fixed_lambda_k1.rds")
+X   <- sim$X            # n × P
+P   <- ncol(X)
+
+# 2) True λ and λ²
+lambdaP  <- sim$lambdaP        # length P
+lambdaP2 <- lambdaP^2
+
+lambdaP2
+
+# MoM‐Trio estimator (k=1)
+C        <- cov(X)
+lambda2  <- numeric(P)
+for (p in 1:P) {
+   vals <- c()
+   idx  <- setdiff(1:P, p)
+   for (i in seq_along(idx)) {
+      q <- idx[i]
+      for (r in idx[-seq_len(i)]) {
+         if (abs(C[q, r]) > 0.02) {
+            vals <- c(vals, C[p, q] * C[p, r] / C[q, r])
+         }
+      }
+   }
+   lambda2[p] <- mean(vals, na.rm = TRUE)
+}
+lambda_trio <- sign(lambda2) * sqrt(abs(lambda2))
+b_trio      <- as.numeric(X %*% lambda_trio) / sum(lambda_trio^2)
+pred_trio   <- lambda_trio[1] * b_trio
+
+```
+
+
+
+```{r}
+
+vdiff_all <- unlist(lapply(1:P, function(p) {
+   idx <- setdiff(1:P,p)
+   v <- c()
+   for(i in seq_along(idx)) for(r in idx[-seq_len(i)]) {
+      if(abs(C[idx[i],r])>0.02)
+         v <- c(v, lambdaP2[p]*C[idx[i],r] - C[p,idx[i]]*C[p,r])
+   }
+   v
+}))
+hist(vdiff_all, breaks=50,
+     main="Distribution of λp²Cqr–CpqCpr",
+     xlab="Difference", col=rgb(0.2,0.6,0.2,0.5))
+abline(v=0,col="blue",lwd=2)
+
+```
+
+
+
+
+```{r}
+
+# 3) Estimate λₚ² by Trio‐MoM: v_pqr = C[p,q]*C[p,r] / C[q,r]
+lambda2_est <- numeric(P)
+for (p in 1:P) {
+   vals <- c()
+   others <- setdiff(1:P, p)
+   for (i in seq_along(others)) {
+      q <- others[i]
+      for (r in others[-seq_len(i)]) {
+         if (abs(C[q,r]) > 0.02) {
+            vals <- c(vals, C[p,q] * C[p,r] / C[q,r])
+         }
+      }
+   }
+   lambda2_est[p] <- mean(vals, na.rm = TRUE)
+}
+
+
+lambda2
+
+```
+
+
+
+```{r}
+
+# Compute 
+#    We’ll just compute summary statistics of these differences for each p
+diff_summary <- lapply(1:P, function(p) {
+   idx <- setdiff(1:P, p)
+   diffs <- c()
+   for (i in seq_along(idx)) {
+      q <- idx[i]
+      for (r in idx[-seq_len(i)]) {
+         if (abs(C[q,r]) > 0.02) {
+            diffs <- c(diffs, lambdaP2[p] * C[q,r] - C[p,q] * C[p,r])
+         }
+      }
+   }
+
+   c(mean = mean(diffs, na.rm=TRUE), sd = sd(diffs, na.rm=TRUE))
+})
+```
+
+
+```{r}
+
+# 5) Display results
+# True vs estimated λ²
+results <- data.frame(
+   p       = 1:P,
+   lambda2_true = lambdaP2,
+   lambda2_est  = lambda2_est
+)
+print(results)
+
+# Difference summaries
+
+print("Compute differences: Δ_pqr = λₚ² * C[q,r] - C[p,q]*C[p,r]")
+diff_df <- do.call(rbind, diff_summary)
+rownames(diff_df) <- paste0("p", 1:P)
+print(diff_df)
+
+```
+
+
+
+
+
+
+
+
+```{r}
+
+plot_resid_vs_b <- function(b, lambda, X, method_name) {
+   P <- ncol(X)
+   par(mfrow = c(3, 4), mar = c(4,4,2,1))
+   for (p in 1:P) {
+      eps <- X[, p] - lambda[p] * b
+      corr_val <- cor(b, eps)
+      plot(b, eps,
+           xlab = "b_i", ylab = expression(epsilon[ ip ]),
+           main = paste0(method_name, ": p=", p, "\ncor=", round(corr_val,2)),
+           pch  = 20, cex = 0.6)
+      abline(h=0, col="gray")
+   }
+   par(mfrow = c(1,1))
+}
+
+# MoM‐Trio residual check
+plot_resid_vs_b(b_trio,  lambda_trio,  X, "MoM Trio")
+
+```
+
+
+
+
+
+
+```{r fig.width=14, fig.height=6, out.width='100%'}
+
+P        <- ncol(X)
+lambdaP2 <- sim$lambdaP^2
+
+others <- lapply(1:P, function(p) setdiff(1:P, p))
+
+# compute v_pqr ratios and Δ_pqr differences
+v_list    <- vector("list", P)
+diff_list <- vector("list", P)
+for(p in 1:P) {
+  idx <- others[[p]]
+  vs   <- c()
+  diffs <- c()
+  for(i in seq_along(idx)) {
+    q <- idx[i]
+    rs <- idx[-i]
+    valid <- abs(C[q, rs]) > 0.02
+    rs    <- rs[valid]
+    vs    <- c(vs,   C[p,q] * C[p, rs] / C[q, rs])
+    diffs <- c(diffs, lambdaP2[p] * C[q, rs] - C[p,q] * C[p, rs])
+  }
+  v_list[[p]]    <- vs
+  diff_list[[p]] <- diffs
+}
+
+
+op <- par(mfrow = c(2, P), mar = c(4, 3, 2, 1))
+
+# top row: λ² estimates
+for (p in seq_len(P)) {
+  boxplot(v_list[[p]],
+          varwidth = FALSE,          
+          notch     = FALSE,        
+          col       = "salmon",
+          border    = "black",
+          main      = paste0("p=", p),
+          ylab      = expression(lambda[p]^2),
+          xaxt      = "n")
+  abline(h = lambdaP2[p], col = "blue", lwd = 2)
+}
+
+# bottom row: differences
+for (p in seq_len(P)) {
+  boxplot(diff_list[[p]],
+          varwidth = FALSE,
+          notch     = FALSE,
+          col       = "lightseagreen",
+          border    = "black",
+          main      = "",
+          ylab      = expression(lambda[p]^2 ~ C[q,r] - C[p,q] * C[p,r]),
+          xaxt      = "n")
+  abline(h = 0, col = "blue", lwd = 2)
+}
+
+par(op)
+
+
+
+```
+
+
+
+
+
+
+```{r fig.width=14, fig.height=6, out.width='100%'}
+# ----- Ciprian’s box-and-whiskers plots for p = 1 -----
+
+P <- ncol(X)
+p <- 1
+idx <- setdiff(1:P, p)
+
+# preallocate v and vdiff of length (P−1)*(P−2)/2
+n_pairs <- length(idx) * (length(idx) - 1) / 2
+v     <- rep(NA, n_pairs)
+vdiff <- rep(NA, n_pairs)
+
+# fill v and vdiff for all q<r in idx
+k <- 1
+for (q in idx[-length(idx)]) {
+  for (r in idx[idx > q]) {
+    if (abs(C[q, r]) > 0.05) {
+      v[k]     <- C[p, q] * C[p, r] / C[q, r]
+    }
+    vdiff[k] <- sim$lambdaP[p]^2 * C[q, r] - C[p, q] * C[p, r]
+    k <- k + 1
+  }
+}
+
+
+
+
+par(mfrow = c(1, 2),        
+    mar   = c(5, 4, 4, 2)+0.1 
+)
+
+# 1) boxplot of the λ1^2 estimates
+boxplot(v,
+        col    = rgb(1, 0, 0, 0.5),
+        border = "black",
+        ylab   = expression("MoM‐Trio: " * lambda[1]^2),
+        main   = "λ1^2 Estimates (p = 1)")
+# add a horizontal line at the true value
+abline(h = sim$lambdaP[1]^2, col = "blue", lwd = 2)
+
+# 2) boxplot of the differences
+boxplot(vdiff,
+        col    = rgb(1, 0, 0, 0.5),
+        border = "black",
+        ylab   = expression(lambda[1]^2 * C[q,r] - C[1,q] * C[1,r]),
+        main   = "Differences (p = 1)")
+# zero line
+abline(h = 0, col = "blue", lwd = 2)
+
+par(mfrow = c(1,1))
+
+
+```
+
+
+
+
+
+
+```{r}
+
+b_true   <- sim$b          # true bᵢ
+#lambda2  <- <your MoM‐Trio λₚ² estimates>
+sigma2   <- 0.2            # known noise variance
+
+# 1) form weights wₚ = λ₂ₚ / σ²
+w_p <- lambda2_est / sigma2
+
+# 2) compute predicted linear predictor Lᵢ = ∑ₚ wₚ X_{i,p}  /  ∑ₚ wₚ
+den <- sum(w_p)
+L   <- as.numeric(X %*% w_p) / den   # length n
+
+# 3) compare to true λ₁·bᵢ
+true_lp <- sim$lambdaP[1] * b_true
+
+# 4) scatterplot and first 3 values
+plot(true_lp, L,
+     xlab = "True λ1·bᵢ", ylab = "estimated λ1·bᵢ",
+     main = "True vs Estimated λ1·bᵢ")
+abline(0,1,col="red")
+
+est_lambda1_bi <- L
+
+head(data.frame(i = 1:nrow(X),
+                true_lp = true_lp,
+                est_lambda1_bi = L), 20)
+
+print("Correlation between true and estimated λ1·bᵢ:")
+cor(true_lp, L)  # e.g. 0.98  
+print("Linear regression coefficients (intercept, slope):")
+lm(L ~ true_lp)$coef  # intercept ≈0, slope ≈1  
+print("Mean squared error of the estimates:")
+mean((true_lp - L)^2)  # small  
+
+
+```
+
+
+
+```{r}
+
+head(data.frame(
+  i                = 1:length(sim$b),
+  true_bi          = sim$b,
+  trio_bi          = b_trio,
+  est_lambda1_bi   = L
+), 3)
+
+
+
+```
+
+

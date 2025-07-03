@@ -23,15 +23,11 @@ lambda_eigen <- sqrt(max(d[1] - sigma2hat, 0)) * V[, 1]          # length P
 b_eigen      <- as.numeric(X %*% lambda_eigen) / sum(lambda_eigen^2)
 pred_eigen   <- lambda_eigen[1] * b_eigen
 
-# 4) Plot True vs Estimated bᵢ (MoM‐Eigen)
-plot(sim$b, b_eigen,
-     xlab = "True b_i", ylab = "MoM‐Eigen b_i",
-     main = "True vs Estimated b_i (MoM‐Eigen)")
-abline(0, 1, col = "red")
+
 
 # ──────────────────────────────────────────────
 # 5) MoM‐Trio estimator (k=1)
-C        <- cor(X)
+C        <- cov(X)
 lambda2  <- numeric(P)
 for (p in 1:P) {
    vals <- c()
@@ -50,60 +46,12 @@ lambda_trio <- sign(lambda2) * sqrt(abs(lambda2))
 b_trio      <- as.numeric(X %*% lambda_trio) / sum(lambda_trio^2)
 pred_trio   <- lambda_trio[1] * b_trio
 
-# 6) Plot True vs Estimated bᵢ (MoM‐Trio)
-plot(sim$b, b_trio,
-     xlab = "True b_i", ylab = "MoM‐Trio b_i",
-     main = "True vs Estimated b_i (MoM‐Trio)")
-abline(0, 1, col = "red")
-
-# ──────────────────────────────────────────────
-# 7) Histograms of Trio‐MoM λₚ² estimates
-par(mfrow = c(5, 4), mar = c(2.5, 2.5, 2, 1))
-for (p in 1:P) {
-   v <- c()
-   idx <- setdiff(1:P, p)
-   for (i in seq_along(idx)) {
-      q <- idx[i]
-      for (r in idx[-seq_len(i)]) {
-         if (abs(C[q, r]) > 0.02) {
-            v <- c(v, C[p, q] * C[p, r] / C[q, r])
-         }
-      }
-   }
-   hist(v,
-        breaks = 30,
-        main   = paste0("p=", p),
-        xlab   = "",
-        col    = rgb(0.8, 0.2, 0.2, 0.5),
-        border = NA
-   )
-   abline(v = lambdaP2[p], col = "blue", lwd = 2)
-}
-par(mfrow = c(1,1))  # reset
-
-# ──────────────────────────────────────────────
-# 8) Off‐diagonal correlation densities
-get_offdiag <- function(M) M[lower.tri(M)]
-r_obs   <- get_offdiag(cor(X))
-resid_eigen <- X - outer(b_eigen, lambda_eigen)
-r_eigen    <- get_offdiag(cor(resid_eigen))
-resid_trio <- X - outer(b_trio, lambda_trio)
-r_trio     <- get_offdiag(cor(resid_trio))
-
-plot(density(r_obs),  lwd = 2, col = "black",
-     main = "Off Diag Correlations (k=1)",
-     xlab = "Correlation", xlim = c(-1,1))
-lines(density(r_trio),  col = "red",    lwd = 2)
-lines(density(r_eigen), col = "blue",   lwd = 2)
-legend("topright",
-       legend = c("Observed","MoM Trio","MoM Eigen"),
-       col    = c("black","red","blue"),
-       lwd    = 2)
-
-par(mfrow = c(1,1)) 
 
 
 
+
+
+#look at this specifcalyy, ALL P Q R THAT ARE DIFFERENT********
 
 vdiff_all <- unlist(lapply(1:P, function(p) {
    idx <- setdiff(1:P,p)
@@ -124,33 +72,6 @@ abline(v=0,col="blue",lwd=2)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 1) Load simulation
-setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
-sim       <- readRDS("sim_fixed_lambda_k1.rds")
-X         <- sim$X        # n × P
-lambdaP   <- sim$lambdaP  # true λₚ
-lambdaP2  <- lambdaP^2    # true λₚ²
-P         <- length(lambdaP)
-
-# 2) Empirical correlation matrix
-C <- cor(X)
 
 # 3) Estimate λₚ² by Trio‐MoM: v_pqr = C[p,q]*C[p,r] / C[q,r]
 lambda2_est <- numeric(P)
