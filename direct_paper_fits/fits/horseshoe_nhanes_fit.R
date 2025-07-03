@@ -2,7 +2,7 @@
 Y <- scale(dat, center = TRUE, scale = TRUE)
 n <- nrow(Y)
 p <- ncol(Y)
-K <- 1  # Number of factors
+K <- 2  # Number of factors
 
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/horseshoe_estimator")
 library(rstan)
@@ -38,7 +38,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = "fit_HS_NHANES1718_k1.rds"
+   file = "fit_HS_NHANES1718_k2.rds"
 )
 
 sum_j      <- summary(fit_j)$summary

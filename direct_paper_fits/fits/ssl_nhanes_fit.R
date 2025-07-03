@@ -1,7 +1,4 @@
-# --------------------------------------------------------------
-# Baseline spike-and-slab factor model for sparse Bayesian FA via Stan
-# Follows the same pipeline as your other fits (center/scale, diagnostics, save list)
-# --------------------------------------------------------------
+# ---
 
 library(rstan)
 rstan_options(auto_write = TRUE)
