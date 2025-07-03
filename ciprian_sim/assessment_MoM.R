@@ -203,3 +203,33 @@ print(diff_df)
 
 
 
+
+
+# assuming you already have X, lambda_trio, b_trio, lambda_eigen, b_eigen from above…
+
+plot_resid_vs_b <- function(b, lambda, X, method_name) {
+   P <- ncol(X)
+   par(mfrow = c(3, 4), mar = c(4,4,2,1))  # 12 panels at a time
+   for (p in 1:P) {
+      eps <- X[, p] - lambda[p] * b
+      corr_val <- cor(b, eps)
+      plot(b, eps,
+           xlab = "b_i", ylab = expression(epsilon[ ip ]),
+           main = paste0(method_name, ": p=", p, "\ncor=", round(corr_val,2)),
+           pch  = 20, cex = 0.6)
+      abline(h=0, col="gray")
+   }
+   par(mfrow = c(1,1))
+}
+
+# MoM‐Trio residual check
+plot_resid_vs_b(b_trio,  lambda_trio,  X, "MoM Trio")
+
+# MoM‐Eigen residual check
+plot_resid_vs_b(b_eigen, lambda_eigen, X, "MoM Eigen")
+
+
+
+
+
+
