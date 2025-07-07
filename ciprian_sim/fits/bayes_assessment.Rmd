@@ -5,6 +5,7 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
+
 ```{r}
 # 1) Load simulation and Bayesian fits
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
@@ -13,7 +14,9 @@ X          <- sim$X                  # n × P data
 P          <- ncol(X)
 b_true     <- sim$b                  # true latent scores
 lambdaP2   <- sim$lambdaP^2          # true λ²
-C          <- cov(X)                 # empirical covariance
+C          <- cov(X)    
+
+lambdaP2
 
 # paths to your three fits
 fit_paths <- list(
