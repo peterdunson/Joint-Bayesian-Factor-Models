@@ -1,5 +1,5 @@
 # simulation_gen.R
-# Fixed λₚ for p = 1…10, zeros for p = 11…20; n = 1000, heteroskedastic noise
+# Fixed λₚ for p = 1…2 “strong”, p = 3…10 “weak”, zeros for p = 11…20; n = 1000, σ² = 0.2
 
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
 
@@ -11,13 +11,15 @@ n       <- 1000
 sigmasq <- 0.2
 
 # 2) Fixed loadings vector λₚ
-lambdaP <- c(rep(1 / sqrt(10), 10), rep(0, 10))  # length P
+lambdaP <- c(
+   rep(1.0, 2),     # 2 really strong loadings
+   rep(0.2, 8),     # 8 weak loadings
+   rep(0.0, 10)     # 10 null loadings
+)
+lambdaP <- lambdaP / sqrt(sum(lambdaP^2))  # normalize to unit length
 
-# 3) Simulate heteroskedastic noise εᵢₚ ∼ N(0, σₚ²)
-#    draw P variances around sigmasq
-sigma2_p <- runif(P, min = 0.5 * sigmasq, max = 1.5 * sigmasq)
-Epsilon  <- matrix(rnorm(n * P), nrow = n, ncol = P) * 
-   matrix(sqrt(sigma2_p), n, P, byrow = TRUE)
+# 3) Simulate noise εᵢₚ ∼ N(0, σ²)
+Epsilon <- sqrt(sigmasq) * matrix(rnorm(n * P), nrow = n, ncol = P)
 
 # 4) Simulate latent scores bᵢ ∼ N(0,1)
 b <- rnorm(n)
@@ -37,5 +39,4 @@ sim <- list(
    Epsilon = Epsilon,  # noise matrix
    C       = C         # empirical covariance
 )
-saveRDS(sim, "sim_fixed_lambda_k1_hetnoise.rds")
-
+saveRDS(sim, "sim_fixed_lambda_k1_4.rds")

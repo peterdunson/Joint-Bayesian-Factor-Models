@@ -10,7 +10,7 @@ output: html_document
 # Ciprian‐style K=1 Simulation Analysis (MoM only)
 # ==============================================
 
-#Sigma2 = 0.2, 10 moderate, 10 null, normalized, heteroskedastic noise
+#Sigma2 = 0.2, 2 extreme strong, 8 weak, 10 null, normalized
 
 ```{r}
 
