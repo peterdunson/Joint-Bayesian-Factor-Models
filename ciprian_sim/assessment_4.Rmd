@@ -351,3 +351,28 @@ head(data.frame(
 
 
 
+```{r}
+
+# 1) assemble a small data.frame
+df <- data.frame(
+  i               = 1:length(sim$b),
+  true_bi         = sim$b,
+  trio_bi         = b_trio,
+  est_lambda1_bi  = L
+)
+
+# 2) print first five rows
+print(head(df, 5))
+
+# 3) side-by-side scatterplots
+par(mfrow = c(1,1))
+plot(df$true_bi, df$trio_bi,
+     xlab = "True bᵢ", ylab = "MoM-Trio bᵢ",
+     main = "True vs MoM-Trio",
+     pch = 20, cex = 0.6)
+abline(0,1, col = "red")
+
+
+```
+
+

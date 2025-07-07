@@ -46,7 +46,6 @@ pred_trio   <- lambda_trio[1] * b_trio
 ```
 
 
-
 ```{r}
 
 vdiff_all <- unlist(lapply(1:P, function(p) {
@@ -64,8 +63,6 @@ hist(vdiff_all, breaks=50,
 abline(v=0,col="blue",lwd=2)
 
 ```
-
-
 
 
 ```{r}
@@ -90,7 +87,6 @@ for (p in 1:P) {
 lambda2
 
 ```
-
 
 
 ```{r}
@@ -135,12 +131,6 @@ print(diff_df)
 ```
 
 
-
-
-
-
-
-
 ```{r}
 
 plot_resid_vs_b <- function(b, lambda, X, method_name) {
@@ -162,10 +152,6 @@ plot_resid_vs_b <- function(b, lambda, X, method_name) {
 plot_resid_vs_b(b_trio,  lambda_trio,  X, "MoM Trio")
 
 ```
-
-
-
-
 
 
 ```{r fig.width=14, fig.height=6, out.width='100%'}
@@ -230,10 +216,6 @@ par(op)
 ```
 
 
-
-
-
-
 ```{r fig.width=14, fig.height=6, out.width='100%'}
 # ----- Ciprian’s box-and-whiskers plots for p = 1 -----
 
@@ -289,10 +271,6 @@ par(mfrow = c(1,1))
 ```
 
 
-
-
-
-
 ```{r}
 
 b_true   <- sim$b          # true bᵢ
@@ -332,7 +310,6 @@ mean((true_lp - L)^2)  # small
 ```
 
 
-
 ```{r}
 
 head(data.frame(
@@ -346,4 +323,27 @@ head(data.frame(
 
 ```
 
+
+```{r}
+
+# 1) assemble a small data.frame
+df <- data.frame(
+  i               = 1:length(sim$b),
+  true_bi         = sim$b,
+  trio_bi         = b_trio,
+  est_lambda1_bi  = L
+)
+
+# 2) print first five rows
+print(head(df, 5))
+
+# 3) side-by-side scatterplots
+par(mfrow = c(1,1))
+plot(df$true_bi, df$trio_bi,
+     xlab = "True bᵢ", ylab = "MoM-Trio bᵢ",
+     main = "True vs MoM-Trio",
+     pch = 20, cex = 0.6)
+abline(0,1, col = "red")
+
+```
 
