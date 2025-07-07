@@ -9,6 +9,11 @@ output:
 # Ciprian‐style K=1 Simulation Analysis (MoM only)
 # ==============================================
 
+
+#sigma2 = 0.2, 10 moderate, 10 null, normalized
+
+#true loadings:
+
 ```{r}
 
 # 1) Load the fixed‐λ simulation
@@ -84,8 +89,6 @@ for (p in 1:P) {
 }
 
 
-lambda2
-
 ```
 
 
@@ -153,6 +156,8 @@ plot_resid_vs_b(b_trio,  lambda_trio,  X, "MoM Trio")
 
 ```
 
+
+#lambda2 estimates on top, differences on bottom
 
 ```{r fig.width=14, fig.height=6, out.width='100%'}
 

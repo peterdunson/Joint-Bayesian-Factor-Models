@@ -1,5 +1,5 @@
 ---
-title: "assessment_4"
+title: "assessment_5"
 output:
   html_document:
     code_folding: hide
@@ -10,14 +10,14 @@ output:
 # Ciprian‐style K=1 Simulation Analysis (MoM only)
 # ==============================================
 
-#Sigma2 = 0.2, 2 extreme strong, 8 weak, 10 null, normalized
+#Sigma2 = 0.6, 10 moderate, 10 null, normalized
 
 #true loadings:
 ```{r}
 
 # 1) Load the fixed‐λ simulation
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
-sim <- readRDS("sim_fixed_lambda_k1_4.rds")
+sim <- readRDS("sim_fixed_lambda_k1_5.rds")
 X   <- sim$X            # n × P
 P   <- ncol(X)
 
@@ -89,6 +89,7 @@ for (p in 1:P) {
    }
    lambda2_est[p] <- mean(vals, na.rm = TRUE)
 }
+
 
 
 ```
@@ -295,11 +296,13 @@ par(mfrow = c(1,1))
 
 
 
+#below is identifiable UP TO SIGN...
+
 ```{r}
 
 b_true   <- sim$b          # true bᵢ
 #lambda2  <- <your MoM‐Trio λₚ² estimates>
-sigma2   <- 0.2            # known noise variance
+sigma2   <- 0.6            # known noise variance
 
 # 1) form weights wₚ = λ₂ₚ / σ²
 w_p <- lambda2_est / sigma2
@@ -348,7 +351,7 @@ head(data.frame(
 
 ```
 
-
+#a few obvious sign flips!
 
 ```{r}
 
@@ -373,5 +376,3 @@ abline(0,1, col = "red")
 
 
 ```
-
-
