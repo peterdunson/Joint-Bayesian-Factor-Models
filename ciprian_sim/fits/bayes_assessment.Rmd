@@ -1,0 +1,298 @@
+---
+title: "assessing_bayes"
+author: "Peter"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+# 1) Load simulation and Bayesian fits
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
+sim        <- readRDS("sim_fixed_lambda_k1.rds")
+X          <- sim$X                  # n × P data
+P          <- ncol(X)
+b_true     <- sim$b                  # true latent scores
+lambdaP2   <- sim$lambdaP^2          # true λ²
+C          <- cov(X)                 # empirical covariance
+
+# paths to your three fits
+fit_paths <- list(
+  MGSP      = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit/MGSP/fit_mgsp_k1_cipsim.rds",
+  SpikeSlab = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit/spikeslab/fit_spikeslab_k1_cipsim.rds",
+  Horseshoe = "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit/horseshoe/fit_horseshoe_k1_cipsim.rds"
+)
+
+# load posterior‐mean loadings and compute estimated b's
+lambda_hat <- lapply(fit_paths, function(fp) readRDS(fp)$Lambda_hat[,1])
+b_hat      <- lapply(lambda_hat, function(lam) as.numeric(X %*% lam))
+
+```
+
+
+
+```{r}
+# 2) Distribution of λp² C[q,r] – C[p,q]C[p,r] for each Bayesian fit
+vdiff_all <- lapply(lambda_hat, function(lam) {
+  unlist(lapply(1:P, function(p) {
+    idx <- setdiff(1:P, p)
+    v   <- c()
+    for(i in seq_along(idx)) for(r in idx[-seq_len(i)]) {
+      if(abs(C[idx[i], r]) > 0.02)
+        v <- c(v, lambdaP2[p] * C[idx[i], r] - C[p, idx[i]] * C[p, r])
+    }
+    v
+  }))
+})
+
+par(mfrow = c(1,3))
+hist(vdiff_all$MGSP,      breaks=50, main="MGSP: λ²Cqr–CpqCpr",      xlab="Difference", col=rgb(0.8,0.4,0.4,0.5))
+hist(vdiff_all$SpikeSlab, breaks=50, main="SpikeSlab: λ²Cqr–CpqCpr", xlab="Difference", col=rgb(0.4,0.8,0.4,0.5))
+hist(vdiff_all$Horseshoe, breaks=50, main="Horseshoe: λ²Cqr–CpqCpr", xlab="Difference", col=rgb(0.4,0.4,0.8,0.5))
+abline(v=0, col="blue", lwd=2)
+par(mfrow = c(1,1))
+
+```
+
+
+```{r}
+# 3) λ² estimates for each Bayesian fit
+lambda2_est <- lapply(lambda_hat, function(lam) lam^2)
+
+# 4) Summary of differences Δ_pqr for each fit
+diff_summary <- lapply(vdiff_all, function(v) {
+  # split v by p: each p contributes length((P-1)*(P-2)/2) entries in order
+  counts   <- rep((P-1)*(P-2)/2, P)
+  splits   <- split(v, rep(1:P, counts))
+  t(sapply(splits, function(x) c(mean=mean(x), sd=sd(x))))
+})
+
+```
+
+
+
+```{r}
+# 5) Display λ² recovery and Δ summaries
+for(name in names(lambda2_est)) {
+  cat("-----", name, "λ² recovery -----\n")
+  df1 <- data.frame(
+    p              = 1:P,
+    lambda2_true   = lambdaP2,
+    lambda2_est    = lambda2_est[[name]]
+  )
+  print(df1)
+  cat("-----", name, "Δ summaries -----\n")
+  df2 <- diff_summary[[name]]
+  rownames(df2) <- paste0("p", 1:P)
+  print(df2)
+}
+
+```
+
+
+```{r}
+# 6) Residual vs b plots for each fit
+plot_resid_vs_b <- function(b, lam, method) {
+  par(mfrow = c(3,4), mar = c(4,4,2,1))
+  for(p in 1:P) {
+    eps   <- X[,p] - lam[p]*b
+    corr  <- round(cor(b, eps), 2)
+    plot(b, eps,
+         xlab = "b_i", ylab = expression(epsilon[ip]),
+         main = paste0(method, ": p=", p, "\ncor=", corr),
+         pch = 20, cex = 0.6)
+    abline(h = 0, col = "gray")
+  }
+  par(mfrow = c(1,1))
+}
+
+plot_resid_vs_b(b_hat$MGSP,      lambda_hat$MGSP,      "MGSP")
+plot_resid_vs_b(b_hat$SpikeSlab, lambda_hat$SpikeSlab, "SpikeSlab")
+plot_resid_vs_b(b_hat$Horseshoe, lambda_hat$Horseshoe, "Horseshoe")
+
+```
+
+
+
+```{r}
+# 7) Boxplots of λ² estimates & Δ_pqr differences by p
+plot_boxes <- function(lam2_est, method) {
+  par(mfrow = c(2, P), mar = c(4,3,2,1))
+  for(p in 1:P) {
+    # vs: estimated v_pqr
+    idx <- setdiff(1:P, p)
+    vs  <- c()
+    for(i in seq_along(idx)) for(r in idx[-seq_len(i)]) {
+      if(abs(C[idx[i],r]) > 0.02)
+        vs <- c(vs, C[p,idx[i]]*C[p,r]/C[idx[i],r])
+    }
+    boxplot(vs,
+            main = paste0(method, ": p=", p),
+            ylab = expression(lambda[p]^2),
+            xaxt = "n")
+    abline(h = lambdaP2[p], col = "blue", lwd = 2)
+  }
+  for(p in 1:P) {
+    idx   <- setdiff(1:P, p)
+    diffs <- c()
+    for(i in seq_along(idx)) for(r in idx[-seq_len(i)]) {
+      if(abs(C[idx[i],r]) > 0.02)
+        diffs <- c(diffs, lambdaP2[p]*C[idx[i],r] - C[p,idx[i]]*C[p,r])
+    }
+    boxplot(diffs,
+            ylab = expression(lambda[p]^2*C[q,r] - C[p,q]*C[p,r]),
+            xaxt = "n")
+    abline(h = 0, col = "blue", lwd = 2)
+  }
+  par(mfrow = c(1,1))
+}
+
+plot_boxes(lambda2_est$MGSP,      "MGSP")
+plot_boxes(lambda2_est$SpikeSlab, "SpikeSlab")
+plot_boxes(lambda2_est$Horseshoe, "Horseshoe")
+
+```
+
+
+
+
+```{r}
+# 8) Ciprian’s p=1 box-and-whiskers for each fit
+for(name in names(lambda_hat)) {
+  lam  <- lambda_hat[[name]]
+  b    <- b_hat[[name]]
+  p    <- 1
+  idx  <- setdiff(1:P, p)
+  npr  <- length(idx)*(length(idx)-1)/2
+  v    <- numeric(npr)
+  vdiff<- numeric(npr)
+  k    <- 1
+  for(q in idx[-length(idx)]) for(r in idx[idx>q]) {
+    if(abs(C[q,r]) > 0.05) v[k] <- C[p,q]*C[p,r]/C[q,r]
+    vdiff[k] <- lambdaP2[p]*C[q,r] - C[p,q]*C[p,r]
+    k <- k+1
+  }
+  par(mfrow=c(1,2), mar=c(5,4,4,2)+0.1)
+  boxplot(v, col=rgb(1,0,0,0.5), border="black",
+          ylab=expression(lambda[1]^2),
+          main=paste0(name, ": λ1^2 estimates"))
+  abline(h=lambdaP2[p], col="blue", lwd=2)
+  boxplot(vdiff, col=rgb(1,0,0,0.5), border="black",
+          ylab=expression(lambda[1]^2*C[q,r] - C[1,q]*C[1,r]),
+          main=paste0(name, ": Differences (p=1)"))
+  abline(h=0, col="blue", lwd=2)
+  par(mfrow=c(1,1))
+}
+
+```
+
+
+```{r}
+# 9) Weighted linear predictor Lᵢ for each fit
+sigma2 <- 0.2  # known noise variance
+for(name in names(lambda2_est)) {
+  w_p <- lambda2_est[[name]] / sigma2
+  den <- sum(w_p)
+  L   <- as.numeric(X %*% w_p) / den
+  true_lp <- sim$lambdaP[1] * b_true
+  
+  # scatter & stats
+  plot(true_lp, L,
+       xlab="True λ1·bᵢ", ylab=paste0(name, " Lᵢ"),
+       main=paste0(name, ": True vs Estimated λ1·bᵢ"),
+       pch=20, cex=0.6)
+  abline(0,1,col="red")
+  cat("###", name, "λ1·bᵢ correlation:", cor(true_lp, L), "\n")
+}
+
+```
+
+
+```{r}
+# 10) Data frame head and scatter of bᵢ for each fit
+for(name in names(b_hat)) {
+  df <- data.frame(
+    i             = 1:nrow(X),
+    true_bi       = b_true,
+    est_bi        = b_hat[[name]]
+  )
+  cat("---- First 3 rows for", name, "----\n")
+  print(head(df,3))
+  plot(df$true_bi, df$est_bi,
+       xlab="True bᵢ", ylab=paste0(name, " bᵢ"),
+       main=paste0(name, ": True vs Estimated bᵢ"),
+       pch=20, cex=0.6)
+  abline(0,1, col="red")
+}
+
+```
+
+
+
+
+```{r}
+# ----------------------------------------------
+# Permutation‐null correlation + residuals for Bayesian fits
+# ----------------------------------------------
+
+# 1) Observed correlations
+obs_corrs <- C[lower.tri(C)]
+
+# 2) Build permutation‐null distribution
+nperm      <- 1000
+perm_corrs <- vector("numeric", nperm * length(obs_corrs))
+k <- 1
+for(i in seq_len(nperm)) {
+  Xp <- apply(X, 2, sample)      # permute each column independently
+  Cp <- cor(Xp)
+  perms <- Cp[lower.tri(Cp)]
+  perm_corrs[k:(k + length(perms) - 1)] <- perms
+  k <- k + length(perms)
+}
+
+# 3) Plot observed vs. permutation‐null
+hist(perm_corrs, breaks = 50, freq = FALSE,
+     col   = rgb(1,0,0,0.3),
+     xlim  = c(-1,1),
+     main  = "Observed vs. Permutation Correlations",
+     xlab  = "Correlation")
+hist(obs_corrs, breaks = 50, freq = FALSE,
+     col   = rgb(0,0,1,0.3),
+     add   = TRUE)
+legend("topright",
+       legend = c("Permutation null", "Observed"),
+       fill   = c(rgb(1,0,0,0.3), rgb(0,0,1,0.3)))
+
+# 4) Residual correlation histograms after 1‐factor fit
+#    (MGSP)
+X_recon_mgsp <- outer(b_mgsp, lambda_mgsp)
+R_resid_mgsp <- cor(X - X_recon_mgsp)
+hist(R_resid_mgsp[lower.tri(R_resid_mgsp)], breaks = 50, freq = FALSE,
+     col   = rgb(0,1,0,0.3),
+     xlim  = c(-1,1),
+     main  = "MGSP: Residual Correlations (1‐Factor)",
+     xlab  = "Residual correlation")
+abline(v = 0, col = "black", lwd = 2)
+
+#    (Spike‐Slab)
+X_recon_ssl <- outer(b_ssl, lambda_ssl)
+R_resid_ssl <- cor(X - X_recon_ssl)
+hist(R_resid_ssl[lower.tri(R_resid_ssl)], breaks = 50, freq = FALSE,
+     col   = rgb(1,0.5,0,0.3),
+     xlim  = c(-1,1),
+     main  = "SpikeSlab: Residual Correlations",
+     xlab  = "Residual correlation")
+abline(v = 0, col = "black", lwd = 2)
+
+#    (Horseshoe)
+X_recon_hs <- outer(b_hs, lambda_hs)
+R_resid_hs <- cor(X - X_recon_hs)
+hist(R_resid_hs[lower.tri(R_resid_hs)], breaks = 50, freq = FALSE,
+     col   = rgb(0,0.5,1,0.3),
+     xlim  = c(-1,1),
+     main  = "Horseshoe: Residual Correlations",
+     xlab  = "Residual correlation")
+abline(v = 0, col = "black", lwd = 2)
+
+```
+
+
