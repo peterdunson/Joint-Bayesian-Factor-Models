@@ -11,7 +11,7 @@ sim_path <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim
 sim      <- readRDS(sim_path)
 
 # ---- Not CENTER & SCALE DATA ----
-Y <- scale(sim$X, center = FALSE, scale = FALSE)
+Y <- sim$X
 n <- nrow(Y)
 p <- ncol(Y)
 K <- 1

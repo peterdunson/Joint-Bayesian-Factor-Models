@@ -16,6 +16,8 @@ output:
 
 ```{r}
 
+set.seed(26031980)
+
 # 1) Load the fixed‐λ simulation
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
 sim <- readRDS("sim_fixed_lambda_k1.rds")
@@ -90,6 +92,10 @@ for (p in 1:P) {
 
 
 ```
+
+
+
+
 
 
 ```{r}
@@ -354,52 +360,4 @@ abline(0,1, col = "red")
 
 
 
-
-```{r}
-# ----------------------------------------------
-# Permutation‐null correlation check + residuals
-# ----------------------------------------------
-
-# 1) Observed correlations (lower triangle)
-obs_corrs <- C[lower.tri(C)]
-
-# 2) Build permutation null distribution
-nperm      <- 1000
-perm_corrs <- vector("numeric", nperm * length(obs_corrs))
-k <- 1
-for(i in 1:nperm) {
-  Xp <- apply(X, 2, sample)      # permute each column
-  Cp <- cor(Xp)
-  perms <- Cp[lower.tri(Cp)]
-  perm_corrs[k:(k + length(perms) - 1)] <- perms
-  k <- k + length(perms)
-}
-
-# 3) Plot observed vs. permutation‐null
-hist(perm_corrs, breaks = 50, freq = FALSE,
-     col   = rgb(1,0,0,0.3),
-     xlim  = c(-1,1),
-     main  = "Observed vs. Permutation Correlations",
-     xlab  = "Correlation")
-hist(obs_corrs, breaks = 50, freq = FALSE,
-     col   = rgb(0,0,1,0.3),
-     add   = TRUE)
-legend("topright",
-       legend = c("Permutation null", "Observed"),
-       fill   = c(rgb(1,0,0,0.3), rgb(0,0,1,0.3)))
-
-# 4) Fit 1‐factor reconstruction (using MoM‐Trio estimates)
-X_recon <- outer(b_trio, lambda_trio) 
-resid_mat <- X - X_recon
-R_resid   <- cor(resid_mat)
-
-# 5) Histogram of residual correlations
-hist(R_resid[lower.tri(R_resid)], breaks = 50, freq = FALSE,
-     col   = rgb(0,1,0,0.3),
-     xlim  = c(-1,1),
-     main  = "Residual Correlations after 1‐Factor Fit",
-     xlab  = "Residual correlation")
-abline(v = 0, col = "black", lwd = 2)
-
-```
 

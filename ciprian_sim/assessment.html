@@ -451,7 +451,9 @@ display: none;
 <h1>==============================================</h1>
 <p>#sigma2 = 0.2, 10 moderate, 10 null, normalized</p>
 <p>#true loadings:</p>
-<pre class="r"><code># 1) Load the fixed‐λ simulation
+<pre class="r"><code>set.seed(26031980)
+
+# 1) Load the fixed‐λ simulation
 setwd(&quot;/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim&quot;)
 sim &lt;- readRDS(&quot;sim_fixed_lambda_k1.rds&quot;)
 X   &lt;- sim$X            # n × P

@@ -1,9 +1,11 @@
 ---
-title: "mgsp_assessment"
+title: "ssl_assessment"
 output:
   html_document:
     code_folding: hide
 ---
+
+
 
 ```{r}
 set.seed(26031980)
@@ -21,7 +23,7 @@ lambdaP2  <- lambdaP^2        # true λ² (for diagnostics)
 C         <- cov(X)           # empirical covariance
 
 # 2) Load MGSP fit & extract posterior‐mean loadings and scores (normalized like MoM)
-fit_mgsp    <- readRDS("fits/fit_mgsp_k1_cipsim.rds")
+fit_mgsp    <- readRDS("fits/fit_spikeslab_k1_cipsim.rds")
 lambda_trio <- fit_mgsp$Lambda_hat[,1]
 lambda_trio <- lambda_trio / sqrt(sum(lambda_trio^2))           # normalize to unit length
 b_trio      <- as.numeric(X %*% lambda_trio) / sum(lambda_trio^2)
@@ -50,7 +52,7 @@ vdiff_all <- unlist(lapply(1:P, function(p) {
 }))
 
 hist(vdiff_all, breaks = 50,
-     main = "MGSP: Distribution of λ[p]^2·C[q,r] – C[p,q]C[p,r]",
+     main = "SSL: Distribution of λ[p]^2·C[q,r] – C[p,q]C[p,r]",
      xlab = "Difference", col = rgb(0.2,0.6,0.2,0.5))
 abline(v = 0, col = "blue", lwd = 2)
 
@@ -204,50 +206,4 @@ plot(df$true_bi, df$trio_bi,
 abline(0,1, col = "red")
 
 ```
-
-
-
-
-```{r}
-# # ----------------------------------------------
-# # Combined density plot: permutation null, observed, and residual correlations
-# # ----------------------------------------------
-# 
-# # 1) Compute observed correlations
-# obs_corrs <- C[lower.tri(C)]
-# 
-# # 2) Generate permutation‐null correlations
-# nperm      <- 1000
-# perm_corrs <- replicate(nperm, {
-#   Xp <- apply(X, 2, sample)
-#   cor(Xp)[lower.tri(C)]
-# })
-# perm_corrs <- as.numeric(perm_corrs)
-# 
-# # 3) Compute residual correlations after 1‐factor MoM fit
-# X_recon   <- outer(b_trio, lambda_trio)
-# R_resid   <- cor(X - X_recon)
-# resid_corrs <- R_resid[lower.tri(R_resid)]
-# 
-# # 4) Estimate densities
-# d_perm  <- density(perm_corrs,   from = -1, to = 1)
-# d_obs   <- density(obs_corrs,    from = -1, to = 1)
-# d_resid <- density(resid_corrs,  from = -1, to = 1)
-# 
-# # 5) Plot all three together
-# plot(d_perm, 
-#      main = "Correlation Distributions: Null vs Observed vs Residual",
-#      xlab = "Correlation",
-#      lwd  = 2,
-#      ylim = range(d_perm$y, d_obs$y, d_resid$y))
-# lines(d_obs,   col = "lightblue",        lwd = 2)
-# lines(d_resid, col = "forestgreen", lwd = 2)
-# legend("topright",
-#        legend = c("Permutation null", "Observed", "Residual"),
-#        col    = c("black", "lightblue", "forestgreen"),
-#        lwd    = 2,
-#        bty    = "n")
-
-```
-
 

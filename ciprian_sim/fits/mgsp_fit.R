@@ -11,7 +11,7 @@ sim_path <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim
 sim      <- readRDS(sim_path)
 
 # ---- CENTER & SCALE DATA ----
-Y <- scale(sim$X, center = FALSE, scale = FALSE)
+Y <- sim$X
 n <- nrow(Y)
 p <- ncol(Y)
 K <- 1
@@ -50,7 +50,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = sprintf("fit_mgsp_k1_cipsim.rds")
+   file = sprintf("fit_mgsp_k1_cipsim_scale.rds")
 )
 
 # ---- 4) Diagnostics ----
