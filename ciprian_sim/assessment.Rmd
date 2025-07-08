@@ -20,7 +20,7 @@ set.seed(26031980)
 
 # 1) Load the fixed‐λ simulation
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
-sim <- readRDS("sim_fixed_lambda_k1.rds")
+sim <- readRDS("sim_fixed_lambda_k1_1000var.rds")
 X   <- sim$X            # n × P
 P   <- ncol(X)
 

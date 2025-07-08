@@ -1,0 +1,145 @@
+---
+title: "correlation_exploration"
+output:
+  html_document:
+    code_folding: hide
+---
+
+
+```{r fig.width=14, fig.height=6, out.width='100%'}
+# ---- 1. Download and Prepare NHANES Data ----
+download.file(
+  "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/PHTHTE_J.xpt",
+  destfile = "PHTHTE_J.xpt", mode = "wb"
+)
+download.file(
+  "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/DEMO_J.xpt",
+  destfile = "DEMO_J.xpt", mode = "wb"
+)
+library(haven)
+phthalates <- read_xpt("PHTHTE_J.xpt")
+demo <- read_xpt("DEMO_J.xpt")
+
+phthalate_vars <- c(
+  "URXCNP", "URXCOP", "URXECP", "URXECPT", "URXHIBP", "URXMBP",
+  "URXMC1", "URXMCOH", "URXMEP", "URXMHBP", "URXMHH", "URXMHHT",
+  "URXMHNC", "URXMHP", "URXMIB", "URXMNP", "URXMOH", "URXMONP", "URXMZP"
+)
+phthalates_selected <- phthalates[, c("SEQN", phthalate_vars)]
+phthalates_cc <- phthalates_selected[complete.cases(phthalates_selected[, phthalate_vars]), ]
+merged <- merge(phthalates_cc, demo[, c("SEQN", "RIDAGEYR")], by = "SEQN")
+phthalates_adults <- merged[merged$RIDAGEYR >= 18, ]
+dat <- phthalates_adults[, setdiff(names(phthalates_adults), c("SEQN", "RIDAGEYR"))]
+
+# ---- 2. Prepare Data Matrix ----
+Y <- scale(dat, center = TRUE, scale = TRUE)
+n <- nrow(Y)
+P <- ncol(Y)
+
+# ---- 3. Load MGSP Fit and Normalize ----
+fit_dir <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit"
+fit_MGSP <- readRDS(file.path(fit_dir, "MGSP", "fit_joint_NHANES1718_k1.rds"))
+lambda_mgsp <- as.numeric(fit_MGSP$Lambda_hat)
+lambda_mgsp <- lambda_mgsp / sqrt(sum(lambda_mgsp^2)) # L2 normalize
+
+# ---- 4. Get Factor Scores ----
+b_mgsp <- as.numeric(Y %*% lambda_mgsp)
+
+# ---- 5. Plot Correlation Matrix Before/After Removal ----
+library(pheatmap)
+library(gridExtra)
+cor_before <- cor(Y)
+fitted <- outer(b_mgsp, lambda_mgsp)
+cor_after <- cor(Y - fitted)
+
+breaks <- seq(-1, 1, length.out = 101)
+colors <- colorRampPalette(c("blue", "white", "red"))(100)
+
+ph1 <- pheatmap(
+  cor_before, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = colors, breaks = breaks,
+  main = "Before", show_rownames = FALSE, show_colnames = FALSE,
+  silent = TRUE
+)
+ph2 <- pheatmap(
+  cor_after, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = colors, breaks = breaks,
+  main = "After", show_rownames = FALSE, show_colnames = FALSE,
+  silent = TRUE
+)
+
+grid.arrange(
+  ph1$gtable, ph2$gtable,
+  ncol = 2, top = "MGSP: Correlation Matrix Before and After K=1 Removal"
+)
+
+print(mean(Y)); print(sd(Y)); print(mean(Y - fitted)); print(sd(Y - fitted))
+
+cat("Eigenvalues of cor(Y) (Top 5):\n")
+print(head(eigen(cor_before)$values, 5))
+
+cat("Eigenvalues of cor(Y - fitted) (Top 5):\n")
+print(head(eigen(cor_after)$values, 5))
+
+
+hist(cor_before[upper.tri(cor_before)], breaks = 30, 
+     main = "Correlations Before (upper triangle)", xlab = "Correlation")
+hist(cor_after[upper.tri(cor_after)], breaks = 30, 
+     main = "Correlations After (upper triangle)", xlab = "Correlation")
+
+
+
+
+```
+
+```{r fig.width=14, fig.height=6, out.width='100%'}
+# ---- Leading eigenvector of sample correlation matrix ----
+corY <- cor(Y)
+eig <- eigen(corY)
+leading_ev <- eig$vectors[, 1]           # Leading eigenvector (direction)
+
+# Ensure sign consistency (optional, not required)
+if (sum(leading_ev) < 0) leading_ev <- -leading_ev
+
+# Normalize to unit length (important!)
+leading_ev <- leading_ev / sqrt(sum(leading_ev^2))
+
+# Project onto leading direction to get scores
+b_pca <- as.numeric(Y %*% leading_ev)
+
+# Reconstruct fitted rank-1 approximation
+fitted_pca <- outer(b_pca, leading_ev)
+
+# Remove K=1 component
+cor_after_pca <- cor(Y - fitted_pca)
+
+# Plot histogram of off-diagonal correlations after PCA K=1 removal
+hist(cor_after_pca[upper.tri(cor_after_pca)], breaks = 30,
+     main = "Correlations After Removing PCA K=1", xlab = "Correlation")
+
+# Optional: before/after heatmap
+library(pheatmap)
+library(gridExtra)
+breaks <- seq(-1, 1, length.out = 101)
+colors <- colorRampPalette(c("blue", "white", "red"))(100)
+
+ph1 <- pheatmap(
+  corY, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = colors, breaks = breaks,
+  main = "Before", show_rownames = FALSE, show_colnames = FALSE,
+  silent = TRUE
+)
+ph2 <- pheatmap(
+  cor_after_pca, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = colors, breaks = breaks,
+  main = "After (PCA K=1)", show_rownames = FALSE, show_colnames = FALSE,
+  silent = TRUE
+)
+
+grid.arrange(
+  ph1$gtable, ph2$gtable,
+  ncol = 2, top = "PCA: Correlation Matrix Before and After K=1 Removal"
+)
+
+```
+

@@ -281,6 +281,7 @@ plot_loadings_squared(as.numeric(fit_SSL$Lambda_hat), varnames = colnames(Y), ma
 ```
 
 
+
 ```{r}
 # Collect all loadings squared as rows in a matrix
 lambda2_matrix <- rbind(
@@ -407,6 +408,51 @@ plot_resid_vs_b(b_hs, lambda_hs, Y, "Horseshoe")
 lambda_ssl <- as.numeric(fit_SSL$Lambda_hat)
 b_ssl      <- as.numeric(Y %*% lambda_ssl)
 plot_resid_vs_b(b_ssl, lambda_ssl, Y, "Spike-and-Slab")
+
+```
+
+
+
+```{r fig.width=14, fig.height=6, out.width='100%'}
+library(pheatmap)
+library(gridExtra)
+
+plot_cor_before_after_side_by_side <- function(Y, lambda, b, method_name) {
+  cor_before <- cor(Y)
+  fitted     <- outer(b, lambda)
+  cor_after  <- cor(Y - fitted)
+  
+  # Color scale
+  breaks <- seq(-1, 1, length.out = 101)
+  colors <- colorRampPalette(c("blue", "white", "red"))(100)
+  
+  # Make pheatmap grobs (plots as objects)
+  ph1 <- pheatmap(
+    cor_before, cluster_rows = FALSE, cluster_cols = FALSE,
+    color = colors, breaks = breaks,
+    main = "Before", show_rownames = FALSE, show_colnames = FALSE,
+    silent = TRUE
+  )
+  ph2 <- pheatmap(
+    cor_after, cluster_rows = FALSE, cluster_cols = FALSE,
+    color = colors, breaks = breaks,
+    main = "After", show_rownames = FALSE, show_colnames = FALSE,
+    silent = TRUE
+  )
+  
+  # Plot side by side
+  grid.arrange(
+    ph1$gtable, ph2$gtable,
+    ncol = 2,
+    top = method_name
+  )
+}
+
+# Example for each method (run one at a time, or in a loop)
+plot_cor_before_after_side_by_side(Y, lambda_trio, b_trio, "MoM-Trio")
+plot_cor_before_after_side_by_side(Y, lambda_mgsp, b_mgsp, "MGSP")
+plot_cor_before_after_side_by_side(Y, lambda_hs,   b_hs,   "Horseshoe")
+plot_cor_before_after_side_by_side(Y, lambda_ssl,  b_ssl,  "Spike-and-Slab")
 
 ```
 

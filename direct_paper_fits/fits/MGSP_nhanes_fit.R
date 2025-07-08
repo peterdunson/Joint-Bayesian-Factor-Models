@@ -2,7 +2,7 @@
 Y <- scale(dat, center = TRUE, scale = TRUE)
 n <- nrow(Y)
 p <- ncol(Y)
-K <- 2  # Set as desired (number of factors)
+K <- 1  # Set as desired (number of factors)
 
 
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/sparse_bayesian_infinite_factor_model")
@@ -41,7 +41,7 @@ saveRDS(
     posterior  = post_j,
     Lambda_hat = Lambda_j_hat
   ),
-  file = "fit_Joint_NHANES1718_k2.rds"
+  file = "fit_Joint_NHANES1718_k1.rds"
 )
 
 
