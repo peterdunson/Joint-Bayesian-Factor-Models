@@ -1,3 +1,4 @@
+
 data {
   int<lower=1> N;
   int<lower=1> P;
@@ -53,3 +54,6 @@ model {
       Y[, p] ~ normal(mu[, p], sqrt(1.0 / psi[p]));
   }
 }
+
+
+

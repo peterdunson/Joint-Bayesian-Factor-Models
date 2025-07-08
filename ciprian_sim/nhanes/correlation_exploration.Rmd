@@ -282,3 +282,22 @@ legend("topright", legend = labels, col = colors, lwd = 3, bty = "n")
 ```
 
 
+```{r}
+
+n_plot <- 4
+
+par(mfrow = c(2, 2), mar = c(4, 4, 3, 1))
+xlim <- range(unlist(all_corrs))
+
+for (i in 1:n_plot) {
+  this_col <- if (i == 1) rgb(0.2,0.2,0.7,0.4) else rgb(0.9,0.1,0.1,0.4)
+  hist(all_corrs[[i]], breaks = 30, 
+       main = labels[i], xlab = "Correlation", 
+       xlim = xlim, col = this_col)
+}
+par(mfrow = c(1, 1))
+
+
+```
+
+
