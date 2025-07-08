@@ -1,0 +1,95 @@
+---
+title: "mom_nhanes"
+author: "Peter"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r}
+set.seed(26031980)
+
+# 1) Prepare data
+Y <- scale(dat, center = TRUE, scale = TRUE)
+P <- ncol(Y)
+n <- nrow(Y)
+
+# 2) MoM-Trio estimator
+C <- cov(Y)
+lambda2_est <- numeric(P)
+for (p in 1:P) {
+  vals <- c()
+  idx  <- setdiff(1:P, p)
+  for (i in seq_along(idx)) {
+    q <- idx[i]
+    for (r in idx[-seq_len(i)]) {
+      if (abs(C[q, r]) > 0.02) {
+        vals <- c(vals, C[p, q] * C[p, r] / C[q, r])
+      }
+    }
+  }
+  lambda2_est[p] <- mean(vals, na.rm = TRUE)
+}
+lambda_trio <- sign(lambda2_est) * sqrt(abs(lambda2_est))
+lambda_trio <- lambda_trio / sqrt(sum(lambda_trio^2)) # L2 normalize
+
+# MoM-Trio scores
+b_trio <- as.numeric(Y %*% lambda_trio)
+
+# 1. Subject-level dataframe
+df_subjects <- data.frame(
+  subject     = 1:nrow(Y),
+  lambda1_bi  = round(lambda_trio[1] * b_trio, 6),
+  bi          = round(b_trio, 6)
+)
+cat("\nFirst 10 subject scores (lambda1_bi, bi):\n")
+print(head(df_subjects, 10), row.names = FALSE)
+
+# 2. Variable-level dataframe
+df_loadings <- data.frame(
+  variable = colnames(Y),
+  loading  = round(lambda_trio, 6)
+)
+cat("\nMoM-Trio estimated K=1 loadings (L2 normalized):\n")
+print(df_loadings, row.names = FALSE)
+
+# 3. One-row dataframe with all lambdas
+df_all_lambdas <- as.data.frame(t(lambda_trio))
+colnames(df_all_lambdas) <- paste0("lambda", seq_len(P))
+cat("\nAll loadings in one row (lambda1, ..., lambdaP):\n")
+print(round(df_all_lambdas, 6), row.names = FALSE)
+
+# Plots (unchanged)
+par(mfrow = c(1, 2))
+barplot(lambda_trio, 
+        main = "MoM-Trio estimated loadings",
+        names.arg = colnames(Y), las = 2, col = "skyblue")
+hist(b_trio, breaks = 30, 
+     main = "MoM-Trio estimated factor scores",
+     xlab = "b_trio", col = "orange")
+par(mfrow = c(1, 1))
+
+```
+
+
+```{r}
+
+P <- ncol(Y)
+lambdaP2_est <- lambda_trio^2
+
+vdiff_all <- unlist(lapply(1:P, function(p) {
+   idx <- setdiff(1:P, p)
+   v <- c()
+   for(i in seq_along(idx)) for(r in idx[-seq_len(i)]) {
+      if(abs(C[idx[i], r]) > 0.02)
+         v <- c(v, lambdaP2_est[p]*C[idx[i], r] - C[p, idx[i]]*C[p, r])
+   }
+   v
+}))
+hist(vdiff_all, breaks = 50,
+     main = expression("Distribution of estimated " * lambda[p]^2 * "C[q,r] - C[p,q]C[p,r]"),
+     xlab = "Difference", col = rgb(0.2, 0.6, 0.2, 0.5))
+abline(v = 0, col = "blue", lwd = 2)
+
+```
+

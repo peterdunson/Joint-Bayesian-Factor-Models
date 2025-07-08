@@ -24,6 +24,7 @@ C         <- cov(X)           # empirical covariance
 
 # 2) Load MGSP fit & extract posterior‐mean loadings and scores (normalized like MoM)
 fit_mgsp    <- readRDS("fits/fit_spikeslab_k1_cipsim.rds")
+
 lambda_trio <- fit_mgsp$Lambda_hat[,1]
 lambda_trio <- lambda_trio / sqrt(sum(lambda_trio^2))           # normalize to unit length
 b_trio      <- as.numeric(X %*% lambda_trio) / sum(lambda_trio^2)

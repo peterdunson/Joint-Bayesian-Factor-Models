@@ -7,11 +7,10 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
 # ---- CHOOSE SIMULATION ----
-sim_path <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/sim_fixed_lambda_k1.rds"
+sim_path <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/sim_fixed_lambda_k1_2.rds"
 sim      <- readRDS(sim_path)
 
-# ---- CENTER & SCALE DATA ----
-Y <- scale(sim$X, center = FALSE, scale = FALSE)
+Y <- sim$X
 n <- nrow(Y)
 p <- ncol(Y)
 K <- 1
@@ -50,7 +49,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = "fit_horseshoe_k1_cipsim.rds"
+   file = "fit_horseshoe_k1_cipsim_2.rds"
 )
 
 # ---- Diagnostics ----

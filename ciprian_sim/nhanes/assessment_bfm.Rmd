@@ -1,0 +1,412 @@
+---
+title: "assessment_nhanesk1"
+output:
+  html_document:
+    code_folding: hide
+---
+
+```{r}
+download.file(
+  "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/PHTHTE_J.xpt",
+  destfile = "PHTHTE_J.xpt",
+  mode = "wb"
+)
+
+library(haven)
+phthalates <- read_xpt("PHTHTE_J.xpt")
+
+
+# Download
+download.file(
+  "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/DEMO_J.xpt",
+  destfile = "DEMO_J.xpt",
+  mode = "wb"
+)
+
+
+# Read it
+library(haven)
+demo <- read_xpt("DEMO_J.xpt")
+
+
+
+phthalate_vars <- c(
+  "URXCNP", "URXCOP", "URXECP", "URXECPT", "URXHIBP", "URXMBP",
+  "URXMC1", "URXMCOH", "URXMEP", "URXMHBP", "URXMHH", "URXMHHT",
+  "URXMHNC", "URXMHP", "URXMIB", "URXMNP", "URXMOH", "URXMONP", "URXMZP"
+)
+
+phthalates_selected <- phthalates[, c("SEQN", phthalate_vars)]
+
+
+phthalates_cc <- phthalates_selected[complete.cases(phthalates_selected[, phthalate_vars]), ]
+
+
+
+# Merge by SEQN
+merged <- merge(phthalates_cc, demo[, c("SEQN", "RIDAGEYR")], by = "SEQN")
+
+
+phthalates_adults <- merged[merged$RIDAGEYR >= 18, ]
+
+
+dat <- phthalates_adults[, setdiff(names(phthalates_adults), c("SEQN", "RIDAGEYR"))]
+
+```
+
+
+```{r}
+set.seed(26031980)
+
+# 1) Prepare data
+Y <- scale(dat, center = TRUE, scale = TRUE)
+P <- ncol(Y)
+n <- nrow(Y)
+
+# 2) MoM-Trio estimator
+C <- cov(Y)
+lambda2_est <- numeric(P)
+for (p in 1:P) {
+  vals <- c()
+  idx  <- setdiff(1:P, p)
+  for (i in seq_along(idx)) {
+    q <- idx[i]
+    for (r in idx[-seq_len(i)]) {
+      if (abs(C[q, r]) > 0.02) {
+        vals <- c(vals, C[p, q] * C[p, r] / C[q, r])
+      }
+    }
+  }
+  lambda2_est[p] <- mean(vals, na.rm = TRUE)
+}
+lambda_trio <- sign(lambda2_est) * sqrt(abs(lambda2_est))
+lambda_trio <- lambda_trio / sqrt(sum(lambda_trio^2)) # L2 normalize
+
+# MoM-Trio scores
+set.seed(26031980)
+
+# 1) Prepare data
+Y <- scale(dat, center = TRUE, scale = TRUE)
+P <- ncol(Y)
+n <- nrow(Y)
+
+# 2) MoM-Trio estimator
+C <- cov(Y)
+lambda2_est <- numeric(P)
+for (p in 1:P) {
+  vals <- c()
+  idx  <- setdiff(1:P, p)
+  for (i in seq_along(idx)) {
+    q <- idx[i]
+    for (r in idx[-seq_len(i)]) {
+      if (abs(C[q, r]) > 0.02) {
+        vals <- c(vals, C[p, q] * C[p, r] / C[q, r])
+      }
+    }
+  }
+  lambda2_est[p] <- mean(vals, na.rm = TRUE)
+}
+lambda_trio <- sign(lambda2_est) * sqrt(abs(lambda2_est))
+lambda_trio <- lambda_trio / sqrt(sum(lambda_trio^2)) # L2 normalize
+
+# MoM-Trio scores
+b_trio <- as.numeric(Y %*% lambda_trio) / sum(lambda_trio^2)
+
+# 1. Subject-level dataframe
+df_subjects <- data.frame(
+  subject     = 1:nrow(Y),
+  lambda1_bi  = round(lambda_trio[1] * b_trio, 6),
+  bi          = round(b_trio, 6)
+)
+cat("\nFirst 10 subject scores (lambda1_bi, bi):\n")
+print(head(df_subjects, 10), row.names = FALSE)
+
+# 2. Variable-level dataframe
+df_loadings <- data.frame(
+  variable = colnames(Y),
+  loading  = round(lambda_trio, 6)
+)
+cat("\nMoM-Trio estimated K=1 loadings (L2 normalized):\n")
+print(df_loadings, row.names = FALSE)
+
+# 3. One-row dataframe with all lambdas
+df_all_lambdas <- as.data.frame(t(lambda_trio))
+colnames(df_all_lambdas) <- paste0("lambda", seq_len(P))
+cat("\nAll loadings in one row (lambda1, ..., lambdaP):\n")
+print(round(df_all_lambdas, 6), row.names = FALSE)
+
+# Plots (unchanged)
+par(mfrow = c(1, 2))
+barplot(lambda_trio, 
+        main = "MoM-Trio estimated loadings",
+        names.arg = colnames(Y), las = 2, col = "skyblue")
+hist(b_trio, breaks = 30, 
+     main = "MoM-Trio estimated factor scores",
+     xlab = "b_trio", col = "orange")
+par(mfrow = c(1, 1))
+
+```
+
+
+
+```{r}
+# Paths to fits (already loaded as shown)
+fit_dir <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit"
+fit_MGSP <- readRDS(file.path(fit_dir, "MGSP", "fit_joint_NHANES1718_k1.rds"))
+fit_HS   <- readRDS(file.path(fit_dir, "Horseshoe", "fit_HS_NHANES1718_k1.rds"))
+fit_SSL  <- readRDS(file.path(fit_dir, "spike_slab", "fit_SSL_NHANES1718_k1.rds"))
+
+# --- Overwrite fit$Lambda_hat with normalized loadings (only ONCE here) ---
+fit_MGSP$Lambda_hat <- as.numeric(fit_MGSP$Lambda_hat)
+fit_MGSP$Lambda_hat <- fit_MGSP$Lambda_hat / sqrt(sum(fit_MGSP$Lambda_hat^2))
+
+fit_HS$Lambda_hat <- as.numeric(fit_HS$Lambda_hat)
+fit_HS$Lambda_hat <- fit_HS$Lambda_hat / sqrt(sum(fit_HS$Lambda_hat^2))
+
+fit_SSL$Lambda_hat <- as.numeric(fit_SSL$Lambda_hat)
+fit_SSL$Lambda_hat <- fit_SSL$Lambda_hat / sqrt(sum(fit_SSL$Lambda_hat^2))
+
+# Your Y matrix:
+Y <- scale(dat, center = TRUE, scale = TRUE)
+n <- nrow(Y)
+P <- ncol(Y)
+
+# Function to create all 3 dataframes for a fit (no normalization here)
+make_fit_dfs <- function(Lambda_hat, Y) {
+  lambda <- as.numeric(Lambda_hat)                   # ensure vector (already normalized)
+  
+  # Factor scores
+  b <- as.numeric(Y %*% lambda)
+
+  # 1. Subject-level dataframe
+  df_subjects <- data.frame(
+    subject    = 1:nrow(Y),
+    lambda1_bi = round(lambda[1] * b, 6),
+    bi         = round(b, 6)
+  )
+
+  # 2. Variable-level dataframe
+  df_loadings <- data.frame(
+    variable = colnames(Y),
+    loading  = round(lambda, 6)
+  )
+
+  # 3. One-row dataframe with all lambdas
+  df_all_lambdas <- as.data.frame(t(lambda))
+  colnames(df_all_lambdas) <- paste0("lambda", seq_len(P))
+
+  list(
+    subjects    = df_subjects,
+    loadings    = df_loadings,
+    all_lambdas = df_all_lambdas
+  )
+}
+
+# Example usage (works exactly as before):
+mgsp_dfs <- make_fit_dfs(fit_MGSP$Lambda_hat, Y)
+hs_dfs   <- make_fit_dfs(fit_HS$Lambda_hat, Y)
+ssl_dfs  <- make_fit_dfs(fit_SSL$Lambda_hat, Y)
+
+```
+
+
+```{r}
+# MGSP
+mgsp_dfs <- make_fit_dfs(fit_MGSP$Lambda_hat, Y)
+cat("\nMGSP: First 10 subjects\n")
+print(head(mgsp_dfs$subjects, 10), row.names = FALSE)
+cat("\nMGSP: Loadings\n")
+print(mgsp_dfs$loadings, row.names = FALSE)
+cat("\nMGSP: All lambdas (one row)\n")
+print(mgsp_dfs$all_lambdas, row.names = FALSE)
+```
+
+
+
+```{r}
+# HS
+hs_dfs <- make_fit_dfs(fit_HS$Lambda_hat, Y)
+cat("\nHS: First 10 subjects\n")
+print(head(hs_dfs$subjects, 10), row.names = FALSE)
+cat("\nHS: Loadings\n")
+print(hs_dfs$loadings, row.names = FALSE)
+cat("\nHS: All lambdas (one row)\n")
+print(hs_dfs$all_lambdas, row.names = FALSE)
+```
+
+
+
+```{r}
+
+# SSL
+ssl_dfs <- make_fit_dfs(fit_SSL$Lambda_hat, Y)
+cat("\nSSL: First 10 subjects\n")
+print(head(ssl_dfs$subjects, 10), row.names = FALSE)
+cat("\nSSL: Loadings\n")
+print(ssl_dfs$loadings, row.names = FALSE)
+cat("\nSSL: All lambdas (one row)\n")
+print(ssl_dfs$all_lambdas, row.names = FALSE)
+```
+
+
+
+
+
+
+```{r}
+# Plot squared loadings (lambda^2)
+plot_loadings_squared <- function(loadings, varnames = NULL, main = "Squared Factor Loadings", ylim = NULL) {
+  lambda2 <- loadings^2
+  if (is.null(varnames)) varnames <- paste0("V", seq_along(loadings))
+  if (is.null(ylim)) ylim <- c(0, max(lambda2))
+  barplot(lambda2, names.arg = varnames, las = 2,
+          col = "orchid", main = main, ylim = ylim, cex.names = 0.7)
+  abline(h = 0, col = "gray60")
+}
+
+# Example usage:
+
+# For MoM-Trio:
+plot_loadings_squared(lambda_trio, varnames = colnames(Y), main = "MoM-Trio Squared Loadings")
+
+# For MGSP:
+plot_loadings_squared(as.numeric(fit_MGSP$Lambda_hat), varnames = colnames(Y), main = "MGSP Squared Loadings")
+
+# For Horseshoe:
+plot_loadings_squared(as.numeric(fit_HS$Lambda_hat), varnames = colnames(Y), main = "Horseshoe Squared Loadings")
+
+# For Spike-and-Slab:
+plot_loadings_squared(as.numeric(fit_SSL$Lambda_hat), varnames = colnames(Y), main = "Spike-and-Slab Squared Loadings")
+
+```
+
+
+```{r}
+# Collect all loadings squared as rows in a matrix
+lambda2_matrix <- rbind(
+  MoM_Trio      = lambda_trio^2,
+  MGSP          = as.numeric(fit_MGSP$Lambda_hat)^2,
+  Horseshoe     = as.numeric(fit_HS$Lambda_hat)^2,
+  Spike_and_Slab= as.numeric(fit_SSL$Lambda_hat)^2
+)
+
+colnames(lambda2_matrix) <- colnames(Y)
+
+# Install and load pheatmap if needed
+if (!requireNamespace("pheatmap", quietly = TRUE)) install.packages("pheatmap")
+library(pheatmap)
+
+# Plot heatmap: each row is a method, columns are variables, color is lambda^2
+pheatmap(lambda2_matrix,
+         cluster_rows = FALSE,
+         cluster_cols = FALSE,
+         color = colorRampPalette(c("white", "pink", "red"))(100),
+         main = "Squared Factor Loadings (λ²) by Method",
+         fontsize_row = 12, fontsize_col = 9, angle_col = 45)
+
+```
+
+
+
+
+```{r}
+# Function to compute all vdiffs for a vector of loadings and a covariance matrix
+compute_vdiff_all <- function(lambda, C, threshold = 0.02) {
+  P <- length(lambda)
+  lambda2 <- lambda^2
+  vdiff_all <- unlist(lapply(1:P, function(p) {
+    idx <- setdiff(1:P, p)
+    v <- c()
+    for (i in seq_along(idx)) for (r in idx[-seq_len(i)]) {
+      if (abs(C[idx[i], r]) > threshold)
+        v <- c(v, lambda2[p] * C[idx[i], r] - C[p, idx[i]] * C[p, r])
+    }
+    v
+  }))
+  return(vdiff_all)
+}
+
+# Compute all vdiff vectors
+vdiff_trio <- compute_vdiff_all(lambda_trio, cov(Y))
+vdiff_mgsp <- compute_vdiff_all(as.numeric(fit_MGSP$Lambda_hat), cov(Y))
+vdiff_hs   <- compute_vdiff_all(as.numeric(fit_HS$Lambda_hat),   cov(Y))
+vdiff_ssl  <- compute_vdiff_all(as.numeric(fit_SSL$Lambda_hat),  cov(Y))
+
+# Compute symmetric x-axis limits
+get_xlim <- function(x) {
+  m <- max(abs(range(x, na.rm = TRUE)))
+  c(-m, m)
+}
+
+par(mfrow = c(2, 2))
+
+hist(vdiff_trio, breaks = 50,
+     main = "MoM-Trio",
+     xlab = expression(lambda[p]^2 ~ "C[q,r] - C[p,q]C[p,r]"),
+     col = rgb(0.2, 0.6, 0.2, 0.5),
+     xlim = get_xlim(vdiff_trio))
+abline(v = 0, col = "blue", lwd = 2)
+
+hist(vdiff_mgsp, breaks = 50,
+     main = "MGSP",
+     xlab = expression(lambda[p]^2 ~ "C[q,r] - C[p,q]C[p,r]"),
+     col = rgb(0.5, 0.2, 0.7, 0.5),
+     xlim = get_xlim(vdiff_mgsp))
+abline(v = 0, col = "blue", lwd = 2)
+
+hist(vdiff_hs, breaks = 50,
+     main = "Horseshoe",
+     xlab = expression(lambda[p]^2 ~ "C[q,r] - C[p,q]C[p,r]"),
+     col = rgb(0.1, 0.6, 0.8, 0.5),
+     xlim = get_xlim(vdiff_hs))
+abline(v = 0, col = "blue", lwd = 2)
+
+hist(vdiff_ssl, breaks = 50,
+     main = "Spike-and-Slab",
+     xlab = expression(lambda[p]^2 ~ "C[q,r] - C[p,q]C[p,r]"),
+     col = rgb(0.9, 0.7, 0.2, 0.5),
+     xlim = get_xlim(vdiff_ssl))
+abline(v = 0, col = "blue", lwd = 2)
+
+par(mfrow = c(1, 1))
+
+
+```
+
+
+```{r}
+plot_resid_vs_b <- function(b, lambda, X, method_name) {
+   P <- ncol(X)
+   par(mfrow = c(3, 4), mar = c(4,4,2,1))
+   for (p in 1:P) {
+      eps <- X[, p] - lambda[p] * b
+      corr_val <- cor(b, eps)
+      plot(b, eps,
+           xlab = "b_i", ylab = expression(epsilon[ ip ]),
+           main = paste0(method_name, ": ", colnames(X)[p], "\ncor=", round(corr_val,2)),
+           pch  = 20, cex = 0.6)
+      abline(h=0, col="gray")
+   }
+   par(mfrow = c(1,1))
+}
+
+# MoM-Trio
+plot_resid_vs_b(b_trio, lambda_trio, Y, "MoM-Trio")
+
+# MGSP
+lambda_mgsp <- as.numeric(fit_MGSP$Lambda_hat)
+b_mgsp      <- as.numeric(Y %*% lambda_mgsp)
+plot_resid_vs_b(b_mgsp, lambda_mgsp, Y, "MGSP")
+
+# Horseshoe
+lambda_hs <- as.numeric(fit_HS$Lambda_hat)
+b_hs      <- as.numeric(Y %*% lambda_hs)
+plot_resid_vs_b(b_hs, lambda_hs, Y, "Horseshoe")
+
+# Spike-and-Slab
+lambda_ssl <- as.numeric(fit_SSL$Lambda_hat)
+b_ssl      <- as.numeric(Y %*% lambda_ssl)
+plot_resid_vs_b(b_ssl, lambda_ssl, Y, "Spike-and-Slab")
+
+```
+

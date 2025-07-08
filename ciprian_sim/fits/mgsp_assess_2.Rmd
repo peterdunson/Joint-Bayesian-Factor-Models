@@ -1,0 +1,209 @@
+---
+title: "mgsp_assessment_2"
+output:
+  html_document:
+    code_folding: hide
+---
+
+# MGSP on CIPSIM 2
+
+```{r}
+set.seed(26031980)
+```
+
+
+```{r}
+# 1) Load simulation, true λ’s, and covariance
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
+sim       <- readRDS("sim_fixed_lambda_k1_2.rds")
+X         <- sim$X            # n × P
+P         <- ncol(X)
+lambdaP   <- sim$lambdaP      # true loadings
+lambdaP2  <- lambdaP^2        # true λ² (for diagnostics)
+C         <- cov(X)           # empirical covariance
+
+# 2) Load MGSP fit & extract posterior‐mean loadings and scores (normalized like MoM)
+fit_mgsp    <- readRDS("fits/fit_mgsp_k1_cipsim_2.rds")
+lambda_trio <- fit_mgsp$Lambda_hat[,1]
+lambda_trio <- lambda_trio / sqrt(sum(lambda_trio^2))           # normalize to unit length
+b_trio      <- as.numeric(X %*% lambda_trio) / sum(lambda_trio^2)
+pred_trio   <- lambda_trio[1] * b_trio
+lambda2_est <- lambda_trio^2
+
+
+```
+
+
+```{r}
+# 4) “vdiff_all”: distribution of Δₚᵩʳ = λₚ²·C[q,r] – C[p,q]·C[p,r]
+vdiff_all <- unlist(lapply(1:P, function(p) {
+  idx   <- setdiff(1:P, p)
+  diffs <- c()
+  for (i in seq_along(idx)) {
+    q <- idx[i]
+    for (r in idx[-seq_len(i)]) {
+      if (abs(C[q, r]) > 0.02) {
+        diffs <- c(diffs,
+                   lambdaP2[p] * C[q, r] - C[p, q] * C[p, r])
+      }
+    }
+  }
+  diffs
+}))
+
+hist(vdiff_all, breaks = 50,
+     main = "MGSP: Distribution of λ[p]^2·C[q,r] – C[p,q]C[p,r]",
+     xlab = "Difference", col = rgb(0.2,0.6,0.2,0.5))
+abline(v = 0, col = "blue", lwd = 2)
+
+
+```
+
+
+
+
+
+```{r}
+
+# Compute 
+#    We’ll just compute summary statistics of these differences for each p
+diff_summary <- lapply(1:P, function(p) {
+   idx <- setdiff(1:P, p)
+   diffs <- c()
+   for (i in seq_along(idx)) {
+      q <- idx[i]
+      for (r in idx[-seq_len(i)]) {
+         if (abs(C[q,r]) > 0.02) {
+            diffs <- c(diffs, lambdaP2[p] * C[q,r] - C[p,q] * C[p,r])
+         }
+      }
+   }
+
+   c(mean = mean(diffs, na.rm=TRUE), sd = sd(diffs, na.rm=TRUE))
+})
+```
+
+
+```{r}
+
+# 5) Display results
+# True vs estimated λ²
+results <- data.frame(
+   p       = 1:P,
+   lambda2_true = lambdaP2,
+   lambda2_est  = lambda2_est
+)
+print(results)
+
+# Difference summaries
+
+print("Compute differences: Δ_pqr = λₚ² * C[q,r] - C[p,q]*C[p,r]")
+diff_df <- do.call(rbind, diff_summary)
+rownames(diff_df) <- paste0("p", 1:P)
+print(diff_df)
+
+```
+
+
+```{r}
+
+plot_resid_vs_b <- function(b, lambda, X, method_name) {
+   P <- ncol(X)
+   par(mfrow = c(3, 4), mar = c(4,4,2,1))
+   for (p in 1:P) {
+      eps <- X[, p] - lambda[p] * b
+      corr_val <- cor(b, eps)
+      plot(b, eps,
+           xlab = "b_i", ylab = expression(epsilon[ ip ]),
+           main = paste0(method_name, ": p=", p, "\ncor=", round(corr_val,2)),
+           pch  = 20, cex = 0.6)
+      abline(h=0, col="gray")
+   }
+   par(mfrow = c(1,1))
+}
+
+# MoM‐Trio residual check
+plot_resid_vs_b(b_trio,  lambda_trio,  X, "MoM Trio")
+
+```
+
+
+
+
+
+```{r}
+
+b_true   <- sim$b          # true bᵢ
+#lambda2  <- <your MoM‐Trio λₚ² estimates>
+sigma2   <- 0.4            # known noise variance
+
+# 1) form weights wₚ = λ₂ₚ / σ²
+w_p <- lambda2_est / sigma2
+
+# 2) compute predicted linear predictor Lᵢ = ∑ₚ wₚ X_{i,p}  /  ∑ₚ wₚ
+den <- sum(w_p)
+L   <- as.numeric(X %*% w_p) / den   # length n
+
+# 3) compare to true λ₁·bᵢ
+true_lp <- sim$lambdaP[1] * b_true
+
+# 4) scatterplot and first 3 values
+plot(true_lp, L,
+     xlab = "True λ1·bᵢ", ylab = "estimated λ1·bᵢ",
+     main = "True vs Estimated λ1·bᵢ")
+abline(0,1,col="red")
+
+est_lambda1_bi <- L
+
+head(data.frame(i = 1:nrow(X),
+                true_lp = true_lp,
+                est_lambda1_bi = L), 20)
+
+print("Correlation between true and estimated λ1·bᵢ:")
+cor(true_lp, L)  # e.g. 0.98  
+print("Linear regression coefficients (intercept, slope):")
+lm(L ~ true_lp)$coef  # intercept ≈0, slope ≈1  
+print("Mean squared error of the estimates:")
+mean((true_lp - L)^2)  # small  
+
+
+```
+
+
+```{r}
+
+head(data.frame(
+  i                = 1:length(sim$b),
+  true_bi          = sim$b,
+  trio_bi          = b_trio,
+  est_lambda1_bi   = L
+), 3)
+
+
+
+```
+
+
+```{r}
+
+# 1) assemble a small data.frame
+df <- data.frame(
+  i               = 1:length(sim$b),
+  true_bi         = sim$b,
+  trio_bi         = b_trio,
+  est_lambda1_bi  = L
+)
+
+# 2) print first five rows
+print(head(df, 5))
+
+# 3) side-by-side scatterplots
+par(mfrow = c(1,1))
+plot(df$true_bi, df$trio_bi,
+     xlab = "True bᵢ", ylab = "MoM-Trio bᵢ",
+     main = "True vs MoM-Trio",
+     pch = 20, cex = 0.6)
+abline(0,1, col = "red")
+
+```
+

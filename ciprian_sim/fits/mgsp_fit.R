@@ -7,10 +7,9 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
 # ---- CHOOSE SIMULATION ----
-sim_path <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/sim_fixed_lambda_k1.rds"
+sim_path <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/sim_fixed_lambda_k1_1000var.rds"
 sim      <- readRDS(sim_path)
 
-# ---- CENTER & SCALE DATA ----
 Y <- sim$X
 n <- nrow(Y)
 p <- ncol(Y)
@@ -29,8 +28,8 @@ fit_j <- sampling(
    object  = mod,
    data    = stan_data_j,
    chains  = 4,
-   iter    = 16000,
-   warmup  = 8000,
+   iter    = 100,
+   warmup  = 50,
    seed    = 19,
    init    = "random",
    init_r  = 2,
@@ -50,7 +49,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = sprintf("fit_mgsp_k1_cipsim_scale.rds")
+   file = sprintf("fit_mgsp_k1_cipsim_1000var.rds")
 )
 
 # ---- 4) Diagnostics ----
