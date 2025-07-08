@@ -38,7 +38,9 @@ P <- ncol(Y)
 
 # ---- 3. Load MGSP Fit and Normalize ----
 fit_dir <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit"
+
 fit_MGSP <- readRDS(file.path(fit_dir, "MGSP", "fit_joint_NHANES1718_k1.rds"))
+
 lambda_mgsp <- as.numeric(fit_MGSP$Lambda_hat)
 lambda_mgsp <- lambda_mgsp / sqrt(sum(lambda_mgsp^2)) # L2 normalize
 

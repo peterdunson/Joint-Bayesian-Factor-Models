@@ -4,6 +4,7 @@ data {
   int<lower=1> P;
   int<lower=1> K;
   matrix[N, P] Y;
+  matrix<lower=0>[P, K] lambda_prior_sd; // Prior SDs for Lambda (structured prior)
 }
 
 parameters {
@@ -44,7 +45,8 @@ model {
 
   for (p in 1:P)
     for (k in 1:K)
-      Lambda[p, k] ~ normal(0, lambda_sd[p, k]);
+      // Structured prior: user-provided prior SDs can upweight or downweight shrinkage for each (p,k)
+      Lambda[p, k] ~ normal(0, lambda_sd[p, k] * lambda_prior_sd[p, k]);
 
   to_vector(eta) ~ normal(0, 1);
 
@@ -54,6 +56,4 @@ model {
       Y[, p] ~ normal(mu[, p], sqrt(1.0 / psi[p]));
   }
 }
-
-
 

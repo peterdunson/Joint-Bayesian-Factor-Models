@@ -1,0 +1,76 @@
+---
+title: "loading_nhanes_phthalates"
+author: "Peter"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r fig.width=14, fig.height=14, out.width='100%'}
+
+# 1. Load the phthalates data
+
+setwd("path/to/your/data")  # **Set your working directory**
+
+dat <- readRDS("nhanes_phthalates_adults.rds")
+
+# 2. Check the variable names
+cat("Variable names in the dataset:\n")
+print(colnames(dat))
+
+# 3. Scatterplot matrix of all variables
+pairs(
+  dat, 
+  pch = 20, 
+  cex = 0.5, 
+  main = "Scatterplot Matrix: NHANES 2017-18 Phthalates"
+)
+
+# 4. Correlation matrix
+cat("\nCorrelation matrix of all variables:\n")
+print(cor(dat, use = "pairwise.complete.obs"))
+
+```
+
+```{r fig.width=14, fig.height=14, out.width='100%'}
+
+library(pheatmap)
+
+# 3. Standardize the data (column-wise z-score)
+Y_raw <- as.matrix(dat)
+
+# 4. Compute correlation matrix
+cor_raw <- cor(Y_raw)
+
+# 5. Heatmap of correlation matrix
+pheatmap(
+  cor_raw,
+  cluster_rows = FALSE, 
+  cluster_cols = FALSE,
+  color = colorRampPalette(c("white", "pink", "red"))(100),
+  main = "Correlation Matrix (All Variables)",
+  show_rownames = TRUE, 
+  show_colnames = TRUE,
+  labels_row = colnames(Y_raw), 
+  labels_col = colnames(Y_raw),
+  fontsize_row = 9, 
+  fontsize_col = 9
+)
+
+
+```
+
+```{r}
+cor_vals <- cor_raw[lower.tri(cor_raw)]
+
+hist(
+  cor_vals,
+  breaks = 50,
+  main = "Histogram of Pairwise Correlations",
+  xlab = "Correlation",
+  col = "gray90",
+  border = "gray40"
+)
+```
+
+
+

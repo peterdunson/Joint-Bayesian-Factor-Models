@@ -6,7 +6,7 @@ setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
 set.seed(26031980)
 
 # 1) Parameters
-P       <- 100
+P       <- 1000
 n       <- 1000
 sigmasq <- 0.2
 
@@ -32,4 +32,4 @@ sim <- list(
    Epsilon = Epsilon,  # noise matrix
    C       = C         # empirical covariance
 )
-saveRDS(sim, "sim_fixed_lambda_k1_100var.rds")
+saveRDS(sim, "sim_fixed_lambda_k1_1000var.rds")

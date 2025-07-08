@@ -564,61 +564,66 @@ par(mfrow = c(1,1))
 
 
 
-```{r}
-# ---- Histograms of Correlations: Before and After K=1 Removal (All Methods) ----
-
-# Utility: extract off-diagonal (upper triangle) correlations
+```{r fig.width=14, fig.height=14, out.width='100%'}
+# Utility: upper triangle extraction
 get_upper <- function(mat) mat[upper.tri(mat)]
 
-# MoM-Trio
+# One permutation null (change seed for different draws)
+set.seed(1)
+Y_perm <- apply(Y, 2, sample)
+cor_null <- cor(Y_perm)
+offdiag_null <- get_upper(cor_null)
+
+# Overlay function: histogram + null density (classic style)
+plot_hist_with_null <- function(x, null, main, col="dodgerblue", after=FALSE) {
+  # Plot main histogram
+  hist(x, breaks=30, col=col, border="white", xlim=c(-1,1),
+       main=main, xlab="Correlation", freq=FALSE)
+  # Add permutation null as dashed line
+  lines(density(null), lwd=2, lty=2, col="black")
+  legend("topright", legend=c(ifelse(after, "After", "Before"), "Permutation Null"),
+         col=c(col, "black"), lwd=2, lty=c(1,2), bty="n", cex=0.9)
+}
+
+# ---- MoM-Trio ----
 cor_before_trio <- cor(Y)
 cor_after_trio  <- cor(Y_resid_trio)
 offdiag_before_trio <- get_upper(cor_before_trio)
 offdiag_after_trio  <- get_upper(cor_after_trio)
 
-# MGSP
+# ---- MGSP ----
 cor_before_mgsp <- cor(Y)
 cor_after_mgsp  <- cor(Y_resid_mgsp)
 offdiag_before_mgsp <- get_upper(cor_before_mgsp)
 offdiag_after_mgsp  <- get_upper(cor_after_mgsp)
 
-# Horseshoe
+# ---- Horseshoe ----
 cor_before_hs <- cor(Y)
 cor_after_hs  <- cor(Y_resid_hs)
 offdiag_before_hs <- get_upper(cor_before_hs)
 offdiag_after_hs  <- get_upper(cor_after_hs)
 
-# Spike-and-Slab
+# ---- Spike-and-Slab ----
 cor_before_ssl <- cor(Y)
 cor_after_ssl  <- cor(Y_resid_ssl)
 offdiag_before_ssl <- get_upper(cor_before_ssl)
 offdiag_after_ssl  <- get_upper(cor_after_ssl)
 
-# Plot histograms, before and after, for each method (blue=before, red=after)
-par(mfrow = c(2, 2), mar = c(4,4,3,1))
-hist(offdiag_before_trio, breaks = 30, col = rgb(0.2,0.2,0.7,0.4),
-     main = "MoM-Trio: Before", xlab = "Correlation", xlim = c(-1,1))
-hist(offdiag_after_trio, breaks = 30, col = rgb(0.9,0.1,0.1,0.4),
-     main = "MoM-Trio: After", xlab = "Correlation", xlim = c(-1,1))
+# ---- Plot: Before (blue) ----
+par(mfrow = c(2,2), mar = c(4,4,3,1))
+plot_hist_with_null(offdiag_before_trio, offdiag_null, "MoM-Trio: Before", col="dodgerblue")
+plot_hist_with_null(offdiag_before_mgsp, offdiag_null, "MGSP: Before", col="dodgerblue")
+plot_hist_with_null(offdiag_before_hs, offdiag_null, "Horseshoe: Before", col="dodgerblue")
+plot_hist_with_null(offdiag_before_ssl, offdiag_null, "Spike-and-Slab: Before", col="dodgerblue")
+par(mfrow = c(1,1))
 
-hist(offdiag_before_mgsp, breaks = 30, col = rgb(0.2,0.2,0.7,0.4),
-     main = "MGSP: Before", xlab = "Correlation", xlim = c(-1,1))
-hist(offdiag_after_mgsp, breaks = 30, col = rgb(0.9,0.1,0.1,0.4),
-     main = "MGSP: After", xlab = "Correlation", xlim = c(-1,1))
-
-par(mfrow = c(2, 2), mar = c(4,4,3,1))
-hist(offdiag_before_hs, breaks = 30, col = rgb(0.2,0.2,0.7,0.4),
-     main = "Horseshoe: Before", xlab = "Correlation", xlim = c(-1,1))
-hist(offdiag_after_hs, breaks = 30, col = rgb(0.9,0.1,0.1,0.4),
-     main = "Horseshoe: After", xlab = "Correlation", xlim = c(-1,1))
-
-hist(offdiag_before_ssl, breaks = 30, col = rgb(0.2,0.2,0.7,0.4),
-     main = "Spike-and-Slab: Before", xlab = "Correlation", xlim = c(-1,1))
-hist(offdiag_after_ssl, breaks = 30, col = rgb(0.9,0.1,0.1,0.4),
-     main = "Spike-and-Slab: After", xlab = "Correlation", xlim = c(-1,1))
-
-par(mfrow = c(1, 1)) # Reset plotting layout
-
+# ---- Plot: After (red) ----
+par(mfrow = c(2,2), mar = c(4,4,3,1))
+plot_hist_with_null(offdiag_after_trio, offdiag_null, "MoM-Trio: After", col="firebrick", after=TRUE)
+plot_hist_with_null(offdiag_after_mgsp, offdiag_null, "MGSP: After", col="firebrick", after=TRUE)
+plot_hist_with_null(offdiag_after_hs, offdiag_null, "Horseshoe: After", col="firebrick", after=TRUE)
+plot_hist_with_null(offdiag_after_ssl, offdiag_null, "Spike-and-Slab: After", col="firebrick", after=TRUE)
+par(mfrow = c(1,1))
 
 
 ```

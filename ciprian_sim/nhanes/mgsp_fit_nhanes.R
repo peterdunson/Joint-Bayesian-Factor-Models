@@ -11,7 +11,7 @@ Y <- as.matrix(dat)               # convert to matrix
 Y <- scale(Y, center = TRUE, scale = TRUE)  # optionally center & scale
 n <- nrow(Y)
 p <- ncol(Y)
-K <- 1
+K <- 5
 
 # ---- COMPILE MGSP FACTOR MODEL ----
 mod <- stan_model("/path/to/sparse_bayesian_infinite_factor_model/mgps_factor_model.stan")
