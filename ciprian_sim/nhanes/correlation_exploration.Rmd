@@ -55,16 +55,21 @@ cor_after <- cor(Y - fitted)
 breaks <- seq(-1, 1, length.out = 101)
 colors <- colorRampPalette(c("blue", "white", "red"))(100)
 
+# -- MAIN CHANGE: show variable names --
 ph1 <- pheatmap(
   cor_before, cluster_rows = FALSE, cluster_cols = FALSE,
   color = colors, breaks = breaks,
-  main = "Before", show_rownames = FALSE, show_colnames = FALSE,
+  main = "Before", 
+  show_rownames = TRUE, show_colnames = TRUE, # <--- variable names
+  fontsize_row = 9, fontsize_col = 9,
   silent = TRUE
 )
 ph2 <- pheatmap(
   cor_after, cluster_rows = FALSE, cluster_cols = FALSE,
   color = colors, breaks = breaks,
-  main = "After", show_rownames = FALSE, show_colnames = FALSE,
+  main = "After",
+  show_rownames = TRUE, show_colnames = TRUE, # <--- variable names
+  fontsize_row = 9, fontsize_col = 9,
   silent = TRUE
 )
 
@@ -81,7 +86,6 @@ print(head(eigen(cor_before)$values, 5))
 cat("Eigenvalues of cor(Y - fitted) (Top 5):\n")
 print(head(eigen(cor_after)$values, 5))
 
-
 hist(cor_before[upper.tri(cor_before)], breaks = 30, 
      main = "Correlations Before (upper triangle)", xlab = "Correlation")
 hist(cor_after[upper.tri(cor_after)], breaks = 30, 
@@ -91,6 +95,52 @@ hist(cor_after[upper.tri(cor_after)], breaks = 30,
 
 
 ```
+
+
+
+
+
+
+```{r fig.width=14, fig.height=6, out.width='100%'}
+# -- Variable pairs to plot --
+var_pairs <- list(
+  c("URXMNP", "URXMOH"),
+  c("URXMOH", "URXMONP"),
+  c("URXCOP", "URXMOH"),
+  c("URXECP", "URXMNP")
+)
+
+# Get fitted values and residuals (already computed previously)
+# 'Y' is the scaled data matrix, 'fitted' = outer(b_mgsp, lambda_mgsp)
+Y_resid <- Y - fitted
+
+# -- Plotting --
+par(mfrow = c(length(var_pairs), 2), mar = c(4, 4, 3, 1))
+
+for (pair in var_pairs) {
+  var1 <- pair[1]
+  var2 <- pair[2]
+  idx1 <- which(colnames(Y) == var1)
+  idx2 <- which(colnames(Y) == var2)
+  
+  # Before
+  plot(Y[, idx1], Y[, idx2],
+       xlab = var1, ylab = var2,
+       main = paste0("Before: ", var1, " vs ", var2),
+       pch = 20, col = rgb(0.2, 0.2, 0.7, 0.5))
+  
+  # After
+  plot(Y_resid[, idx1], Y_resid[, idx2],
+       xlab = var1, ylab = var2,
+       main = paste0("After: ", var1, " vs ", var2),
+       pch = 20, col = rgb(0.7, 0.2, 0.2, 0.5))
+}
+
+par(mfrow = c(1, 1))
+
+```
+
+
 
 ```{r fig.width=14, fig.height=6, out.width='100%'}
 # ---- Leading eigenvector of sample correlation matrix ----
@@ -142,4 +192,93 @@ grid.arrange(
 )
 
 ```
+
+
+```{r fig.width=14, fig.height=6, out.width='100%'}
+# ---- Leading eigenvectors of sample correlation matrix ----
+corY <- cor(Y)
+eig <- eigen(corY)
+
+# Original off-diagonal correlations
+offdiag_idx <- upper.tri(corY)
+orig_corrs <- corY[offdiag_idx]
+
+# Set up for sequential removal
+Y_resid <- Y
+n_remove <- 4  # Up to PC4
+all_corrs <- list(orig_corrs)
+labels <- c("Original")
+
+for (k in 1:n_remove) {
+  ev <- eig$vectors[, k]
+  # Sign consistency
+  if (sum(ev) < 0) ev <- -ev
+  ev <- ev / sqrt(sum(ev^2))      # Normalize
+  b <- as.numeric(Y_resid %*% ev)
+  fitted <- outer(b, ev)
+  Y_resid <- Y_resid - fitted     # Remove current PC
+  cor_resid <- cor(Y_resid)
+  all_corrs[[k+1]] <- cor_resid[upper.tri(cor_resid)]
+  labels <- c(labels, paste0("After PC", k))
+}
+
+# ---- Plot all histograms together ----
+par(mfrow = c(1, 5), mar = c(4, 4, 3, 1))
+xlim <- range(unlist(all_corrs))
+for (i in 1:5) {
+  hist(all_corrs[[i]], breaks = 30, 
+       main = labels[i], xlab = "Correlation", 
+       xlim = xlim, col = ifelse(i == 1, "grey60", "orange"))
+}
+par(mfrow = c(1, 1))
+
+```
+
+
+```{r}
+# ---- Leading eigenvectors of sample correlation matrix ----
+corY <- cor(Y)
+eig <- eigen(corY)
+
+# Original off-diagonal correlations
+offdiag_idx <- upper.tri(corY)
+orig_corrs <- corY[offdiag_idx]
+
+# Set up for sequential removal
+Y_resid <- Y
+n_remove <- 4  # Up to PC4
+all_corrs <- list(orig_corrs)
+labels <- c("Original")
+colors <- c("#22222280", "#E1575999", "#F28E2B99", "#4E79A799", "#76B7B299") # semi-transparent
+
+for (k in 1:n_remove) {
+  ev <- eig$vectors[, k]
+  # Sign consistency
+  if (sum(ev) < 0) ev <- -ev
+  ev <- ev / sqrt(sum(ev^2))      # Normalize
+  b <- as.numeric(Y_resid %*% ev)
+  fitted <- outer(b, ev)
+  Y_resid <- Y_resid - fitted     # Remove current PC
+  cor_resid <- cor(Y_resid)
+  all_corrs[[k+1]] <- cor_resid[upper.tri(cor_resid)]
+  labels <- c(labels, paste0("After PC", k))
+}
+
+# ---- Overlay all histograms together ----
+# Find common breaks and range for fair comparison
+allvals <- unlist(all_corrs)
+breaks <- seq(min(allvals), max(allvals), length.out = 31)
+
+plot(0, 0, type = "n", xlim = range(allvals), ylim = c(0, max(sapply(all_corrs, function(x) hist(x, breaks = breaks, plot = FALSE)$density))),
+     xlab = "Correlation", ylab = "Density", main = "Off-diagonal Correlations After PC Removal")
+
+for (i in seq_along(all_corrs)) {
+  h <- hist(all_corrs[[i]], breaks = breaks, plot = FALSE)
+  lines(h$mids, h$density, lwd = 3, col = colors[i])
+}
+
+legend("topright", legend = labels, col = colors, lwd = 3, bty = "n")
+
+```
+
 

@@ -5,7 +5,7 @@ output:
     code_folding: hide
 ---
 
-```{r}
+```{r fig.width=14, fig.height=14, out.width='100%'}
 download.file(
   "https://wwwn.cdc.gov/Nchs/Data/Nhanes/Public/2017/DataFiles/PHTHTE_J.xpt",
   destfile = "PHTHTE_J.xpt",
@@ -52,10 +52,29 @@ phthalates_adults <- merged[merged$RIDAGEYR >= 18, ]
 
 dat <- phthalates_adults[, setdiff(names(phthalates_adults), c("SEQN", "RIDAGEYR"))]
 
+# ---- Plot Correlation Matrix (Raw Data) ----
+library(pheatmap)
+
+Y_raw <- scale(dat, center = TRUE, scale = TRUE)  # If you want raw (unscaled), use: Y_raw <- as.matrix(dat)
+cor_raw <- cor(Y_raw)
+pheatmap(
+  cor_raw,
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  color = colorRampPalette(c("white", "pink", "red"))(100),
+  main = "Correlation Matrix (All Variables)",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = colnames(Y_raw), labels_col = colnames(Y_raw),
+  fontsize_row = 9, fontsize_col = 9
+)
+
+# ---- Pairwise Scatterplot Matrix (Raw Data) ----
+pairs(Y_raw, labels = colnames(Y_raw), main = "Scatterplot Matrix (All Variables)")
+
+
 ```
 
 
-```{r}
+```{r fig.width=14, fig.height=6, out.width='100%'}
 set.seed(26031980)
 
 # 1) Prepare data
@@ -253,7 +272,7 @@ print(ssl_dfs$all_lambdas, row.names = FALSE)
 
 
 
-```{r}
+```{r fig.width=14, fig.height=6, out.width='100%'}
 # Plot squared loadings (lambda^2)
 plot_loadings_squared <- function(loadings, varnames = NULL, main = "Squared Factor Loadings", ylim = NULL) {
   lambda2 <- loadings^2
@@ -282,7 +301,7 @@ plot_loadings_squared(as.numeric(fit_SSL$Lambda_hat), varnames = colnames(Y), ma
 
 
 
-```{r}
+```{r fig.width=14, fig.height=6, out.width='100%'}
 # Collect all loadings squared as rows in a matrix
 lambda2_matrix <- rbind(
   MoM_Trio      = lambda_trio^2,
@@ -310,7 +329,7 @@ pheatmap(lambda2_matrix,
 
 
 
-```{r}
+```{r fig.width=14, fig.height=6, out.width='100%'}
 # Function to compute all vdiffs for a vector of loadings and a covariance matrix
 compute_vdiff_all <- function(lambda, C, threshold = 0.02) {
   P <- length(lambda)
@@ -426,21 +445,28 @@ plot_cor_before_after_side_by_side <- function(Y, lambda, b, method_name) {
   breaks <- seq(-1, 1, length.out = 101)
   colors <- colorRampPalette(c("blue", "white", "red"))(100)
   
-  # Make pheatmap grobs (plots as objects)
+  # Show variable names
+  var_names <- colnames(Y)
+  
   ph1 <- pheatmap(
     cor_before, cluster_rows = FALSE, cluster_cols = FALSE,
     color = colors, breaks = breaks,
-    main = "Before", show_rownames = FALSE, show_colnames = FALSE,
+    main = "Before",
+    show_rownames = TRUE, show_colnames = TRUE,
+    labels_row = var_names, labels_col = var_names,
+    fontsize_row = 9, fontsize_col = 9,
     silent = TRUE
   )
   ph2 <- pheatmap(
     cor_after, cluster_rows = FALSE, cluster_cols = FALSE,
     color = colors, breaks = breaks,
-    main = "After", show_rownames = FALSE, show_colnames = FALSE,
+    main = "After",
+    show_rownames = TRUE, show_colnames = TRUE,
+    labels_row = var_names, labels_col = var_names,
+    fontsize_row = 9, fontsize_col = 9,
     silent = TRUE
   )
   
-  # Plot side by side
   grid.arrange(
     ph1$gtable, ph2$gtable,
     ncol = 2,
@@ -455,4 +481,87 @@ plot_cor_before_after_side_by_side(Y, lambda_hs,   b_hs,   "Horseshoe")
 plot_cor_before_after_side_by_side(Y, lambda_ssl,  b_ssl,  "Spike-and-Slab")
 
 ```
+
+
+
+```{r}
+# ---- Find and Plot Most Negative Residual Correlations: Spike-and-Slab ----
+
+# 1. Get residuals for SSL
+fitted_ssl <- outer(b_ssl, lambda_ssl)
+Y_resid_ssl <- Y - fitted_ssl
+
+# 2. Compute residual correlation matrix
+cor_resid_ssl <- cor(Y_resid_ssl)
+
+# 3. Get upper triangle indices (excluding diagonal)
+upper_idx <- which(upper.tri(cor_resid_ssl), arr.ind = TRUE)
+
+# 4. Extract the actual correlations
+resid_cors <- cor_resid_ssl[upper.tri(cor_resid_ssl)]
+
+# 5. Sort to get the 4 most negative correlations
+sorted_neg <- order(resid_cors)  # ascending order (most negative first)
+N <- 4
+top_neg_pairs <- upper_idx[sorted_neg[1:N], , drop = FALSE]
+
+# 6. Plot side-by-side scatterplots for each top negative pair
+par(mfrow = c(N, 2), mar = c(4, 4, 3, 1))
+for (i in 1:N) {
+  p1 <- top_neg_pairs[i, 1]
+  p2 <- top_neg_pairs[i, 2]
+  
+  # Before (original)
+  plot(Y[, p1], Y[, p2],
+       xlab = colnames(Y)[p1], ylab = colnames(Y)[p2],
+       main = sprintf("Before: %s vs %s", colnames(Y)[p1], colnames(Y)[p2]),
+       pch = 20, col = rgb(0.2, 0.2, 0.7, 0.5))
+  
+  # After (residual)
+  plot(Y_resid_ssl[, p1], Y_resid_ssl[, p2],
+       xlab = colnames(Y)[p1], ylab = colnames(Y)[p2],
+       main = sprintf("After: %s vs %s\nResidual cor = %.3f",
+                      colnames(Y)[p1], colnames(Y)[p2],
+                      cor_resid_ssl[p1, p2]),
+       pch = 20, col = rgb(0.7, 0.2, 0.2, 0.5))
+}
+par(mfrow = c(1, 1))
+
+```
+
+
+```{r fig.width=14, fig.height=14, out.width='100%'}
+# ---- MoM-Trio ----
+Y_resid_trio <- Y - outer(b_trio, lambda_trio)
+par(mfrow = c(1,2))
+pairs(Y, labels = colnames(Y), main = "MoM-Trio: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.7)
+pairs(Y_resid_trio, labels = colnames(Y), main = "MoM-Trio: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.7)
+par(mfrow = c(1,1))
+
+# ---- MGSP ----
+Y_resid_mgsp <- Y - outer(b_mgsp, lambda_mgsp)
+par(mfrow = c(1,2))
+pairs(Y, labels = colnames(Y), main = "MGSP: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.7)
+pairs(Y_resid_mgsp, labels = colnames(Y), main = "MGSP: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.7)
+par(mfrow = c(1,1))
+
+# ---- Horseshoe ----
+Y_resid_hs <- Y - outer(b_hs, lambda_hs)
+par(mfrow = c(1,2))
+pairs(Y, labels = colnames(Y), main = "Horseshoe: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.7)
+pairs(Y_resid_hs, labels = colnames(Y), main = "Horseshoe: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.7)
+par(mfrow = c(1,1))
+
+# ---- Spike-and-Slab ----
+Y_resid_ssl <- Y - outer(b_ssl, lambda_ssl)
+par(mfrow = c(1,2))
+pairs(Y, labels = colnames(Y), main = "Spike-and-Slab: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.7)
+pairs(Y_resid_ssl, labels = colnames(Y), main = "Spike-and-Slab: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.7)
+par(mfrow = c(1,1))
+
+```
+
+
+
+
 
