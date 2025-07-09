@@ -2,6 +2,8 @@
 
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
 dat <- readRDS("nhanes_phthalates_adults.rds")
+#remove row 1118
+#dat <- dat[-1707,]
 dat <- log1p(dat)
 
 Y <- scale(dat, center = TRUE, scale = TRUE)
