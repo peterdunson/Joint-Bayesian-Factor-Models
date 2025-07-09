@@ -23,7 +23,7 @@ C         <- cov(X)           # empirical covariance
 # 2) Load MGSP fit & extract posterior‐mean loadings and scores (normalized like MoM)
 fit_mgsp    <- readRDS("fits/fit_mgsp_k1_cipsim.rds")
 lambda_trio <- fit_mgsp$Lambda_hat[,1]
-#lambda_trio <- lambda_trio / sqrt(sum(lambda_trio^2))           # normalize to unit length
+lambda_trio <- lambda_trio / sqrt(sum(lambda_trio^2))           # normalize to unit length
 b_trio      <- as.numeric(X %*% lambda_trio) / sum(lambda_trio^2)
 pred_trio   <- lambda_trio[1] * b_trio
 lambda2_est <- lambda_trio^2
@@ -206,47 +206,26 @@ abline(0,1, col = "red")
 ```
 
 
+```{r fig.width=14, fig.height=14, out.width='100%'}
+# ---- Observed vs Predicted: Show Example Subjects ----
 
+# Pick a few subjects to visualize (e.g., first 5)
+subjects_to_plot <- 1:10
 
-```{r}
-# # ----------------------------------------------
-# # Combined density plot: permutation null, observed, and residual correlations
-# # ----------------------------------------------
-# 
-# # 1) Compute observed correlations
-# obs_corrs <- C[lower.tri(C)]
-# 
-# # 2) Generate permutation‐null correlations
-# nperm      <- 1000
-# perm_corrs <- replicate(nperm, {
-#   Xp <- apply(X, 2, sample)
-#   cor(Xp)[lower.tri(C)]
-# })
-# perm_corrs <- as.numeric(perm_corrs)
-# 
-# # 3) Compute residual correlations after 1‐factor MoM fit
-# X_recon   <- outer(b_trio, lambda_trio)
-# R_resid   <- cor(X - X_recon)
-# resid_corrs <- R_resid[lower.tri(R_resid)]
-# 
-# # 4) Estimate densities
-# d_perm  <- density(perm_corrs,   from = -1, to = 1)
-# d_obs   <- density(obs_corrs,    from = -1, to = 1)
-# d_resid <- density(resid_corrs,  from = -1, to = 1)
-# 
-# # 5) Plot all three together
-# plot(d_perm, 
-#      main = "Correlation Distributions: Null vs Observed vs Residual",
-#      xlab = "Correlation",
-#      lwd  = 2,
-#      ylim = range(d_perm$y, d_obs$y, d_resid$y))
-# lines(d_obs,   col = "lightblue",        lwd = 2)
-# lines(d_resid, col = "forestgreen", lwd = 2)
-# legend("topright",
-#        legend = c("Permutation null", "Observed", "Residual"),
-#        col    = c("black", "lightblue", "forestgreen"),
-#        lwd    = 2,
-#        bty    = "n")
+# Observed: actual values for each variable
+# Predicted: b_trio[i] * lambda_trio for each p
+par(mfrow = c(length(subjects_to_plot), 1), mar = c(3,4,2,1))
+for (i in subjects_to_plot) {
+  obs   <- X[i, ]                # observed (length P)
+  pred  <- b_trio[i] * lambda_trio  # predicted (length P)
+  plot(1:P, obs, type = "b", pch = 20, lwd = 2, col = "black",
+       ylim = range(c(obs, pred)), xlab = "Variable (p)", ylab = "Value",
+       main = paste("Subject", i, ": Observed (black) vs Predicted (red)"))
+  lines(1:P, pred, type = "b", pch = 1, lwd = 2, col = "red")
+  legend("topright", legend = c("Observed", "Predicted"),
+         col = c("black", "red"), lty = 1, lwd = 2, pch = c(20, 1), bty = "n")
+}
+par(mfrow = c(1,1))
 
 ```
 

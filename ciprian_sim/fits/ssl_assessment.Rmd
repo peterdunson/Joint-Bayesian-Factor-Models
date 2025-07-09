@@ -208,3 +208,27 @@ abline(0,1, col = "red")
 
 ```
 
+
+
+```{r fig.width=12, fig.height=12, out.width='100%'}
+# ---- Observed vs Predicted: Show Example Subjects (SSL) ----
+
+# Pick a few subjects to visualize (e.g., 5 random subjects)
+set.seed(123)
+subjects_to_plot <- sample(1:nrow(X), 5)
+
+par(mfrow = c(length(subjects_to_plot), 1), mar = c(3, 4, 2, 1))
+for (i in subjects_to_plot) {
+  obs   <- X[i, ]                   # observed values (length P)
+  pred  <- b_trio[i] * lambda_trio  # predicted values (length P)
+  plot(1:P, obs, type = "b", pch = 20, lwd = 2, col = "black",
+       ylim = range(c(obs, pred)), xlab = "Variable (p)", ylab = "Value",
+       main = paste("Subject", i, ": Observed (black) vs Predicted (red)"))
+  lines(1:P, pred, type = "b", pch = 1, lwd = 2, col = "red")
+  legend("topright", legend = c("Observed", "Predicted"),
+         col = c("black", "red"), lty = 1, lwd = 2, pch = c(20, 1), bty = "n")
+}
+par(mfrow = c(1, 1))
+
+```
+

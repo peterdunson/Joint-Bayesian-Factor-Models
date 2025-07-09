@@ -1,4 +1,9 @@
 # Center and scale (columnwise z-score)
+
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
+dat <- readRDS("nhanes_phthalates_adults.rds")
+dat <- log1p(dat)
+
 Y <- scale(dat, center = TRUE, scale = TRUE)
 n <- nrow(Y)
 p <- ncol(Y)
@@ -8,7 +13,7 @@ K <- 1  # Set as desired (number of factors)
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/sparse_bayesian_infinite_factor_model")
 library(rstan)
 mod <- stan_model("mgps_factor_model.stan")
-setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/applications")
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/method_development")
 
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -41,7 +46,7 @@ saveRDS(
     posterior  = post_j,
     Lambda_hat = Lambda_j_hat
   ),
-  file = "fit_Joint_NHANES1718_k1.rds"
+  file = "fit_Joint_NHANES1718_k1_log.rds"
 )
 
 

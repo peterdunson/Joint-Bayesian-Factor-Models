@@ -20,7 +20,7 @@ set.seed(26031980)
 
 # 1) Load the fixed‐λ simulation
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim")
-sim <- readRDS("sim_fixed_lambda_k1_1000var.rds")
+sim <- readRDS("sim_fixed_lambda_k1.rds")
 X   <- sim$X            # n × P
 P   <- ncol(X)
 
@@ -359,5 +359,95 @@ abline(0,1, col = "red")
 ```
 
 
+
+
+```{r fig.width=12, fig.height=12, out.width='100%'}
+# ---- Observed vs Predicted: Show Example Subjects ----
+
+# Pick a few subjects to visualize (e.g., 5 random subjects)
+set.seed(123)  # for reproducibility
+subjects_to_plot <- sample(1:nrow(X), 5)
+
+# For each subject, plot observed (X[i,]) vs predicted (b_trio[i] * lambda_trio)
+par(mfrow = c(length(subjects_to_plot), 1), mar = c(3, 4, 2, 1))
+for (i in subjects_to_plot) {
+  obs   <- X[i, ]                   # observed values (length P)
+  pred  <- b_trio[i] * lambda_trio  # predicted values (length P)
+  plot(1:P, obs, type = "b", pch = 20, lwd = 2, col = "black",
+       ylim = range(c(obs, pred)), xlab = "Variable (p)", ylab = "Value",
+       main = paste("Subject", i, ": Observed (black) vs Predicted (red)"))
+  lines(1:P, pred, type = "b", pch = 1, lwd = 2, col = "red")
+  legend("topright", legend = c("Observed", "Predicted"),
+         col = c("black", "red"), lty = 1, lwd = 2, pch = c(20, 1), bty = "n")
+}
+par(mfrow = c(1, 1))
+
+```
+
+
+
+```{r}
+# ---- MoM-Trio Bootstrap: CIs for loadings and scores ----
+
+set.seed(888)
+nboot <- 500  # Number of bootstrap samples (1000+ for real CIs; 500 for speed)
+n     <- nrow(X)
+P     <- ncol(X)
+lambda_boot <- matrix(NA, nboot, P)
+b_boot      <- matrix(NA, nboot, n)
+
+for (b in 1:nboot) {
+  idx <- sample(1:n, replace = TRUE)  # Resample subjects (rows) with replacement
+  Xb  <- X[idx, ]
+
+  # MoM-Trio estimator (copy your code)
+  Cb        <- cov(Xb)
+  lambda2b  <- numeric(P)
+  for (p in 1:P) {
+    vals <- c()
+    others <- setdiff(1:P, p)
+    for (i in seq_along(others)) {
+      q <- others[i]
+      for (r in others[-seq_len(i)]) {
+        if (abs(Cb[q, r]) > 0.02) {
+          vals <- c(vals, Cb[p, q] * Cb[p, r] / Cb[q, r])
+        }
+      }
+    }
+    lambda2b[p] <- mean(vals, na.rm = TRUE)
+  }
+  lambda_b <- sign(lambda2b) * sqrt(abs(lambda2b))
+  # Normalize
+  lambda_b <- lambda_b / sqrt(sum(lambda_b^2))
+  b_b      <- as.numeric(X %*% lambda_b) / sum(lambda_b^2)
+
+  lambda_boot[b, ] <- lambda_b
+  b_boot[b, ]      <- b_b
+}
+
+# Loadings CIs (95%)
+lambda_ci <- t(apply(lambda_boot, 2, quantile, probs = c(0.025, 0.5, 0.975), na.rm=TRUE))
+colnames(lambda_ci) <- c("lower", "median", "upper")
+rownames(lambda_ci) <- paste0("p", 1:P)
+cat("\n=== 95% CIs for MoM-Trio Loadings ===\n")
+print(lambda_ci)
+
+# Subject score CIs (first 5 subjects shown)
+b_ci <- t(apply(b_boot, 2, quantile, probs = c(0.025, 0.5, 0.975), na.rm=TRUE))
+colnames(b_ci) <- c("lower", "median", "upper")
+cat("\n=== 95% CIs for MoM-Trio b_i (first 5 subjects) ===\n")
+print(b_ci[1:5, ])
+
+# Optional: Plot the CIs for all loadings
+par(mfrow = c(1, 1))
+matplot(1:P, lambda_ci, type = "l", lty = c(2,1,2), col = c("gray30","red","gray30"),
+        main = "MoM-Trio Loadings (Bootstrap 95% CIs)", xlab = "p", ylab = "Loading")
+legend("topright", legend = c("Lower", "Median", "Upper"), lty = c(2,1,2), col = c("gray30","red","gray30"), bty="n")
+
+# Optional: Show one subject's score CIs
+subject_id <- 1
+cat(sprintf("\nSubject %d: 95%% CI for b = (%.3f, %.3f)\n", subject_id, b_ci[subject_id,1], b_ci[subject_id,3]))
+
+```
 
 

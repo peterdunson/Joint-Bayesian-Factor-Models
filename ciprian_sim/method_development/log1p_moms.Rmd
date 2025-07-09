@@ -1,13 +1,16 @@
 ---
-title: "assessment_nhanesk1"
+title: "log1p_moms"
 output:
   html_document:
     code_folding: hide
 ---
 
+
 ```{r fig.width=14, fig.height=14, out.width='100%'}
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
 dat <- readRDS("nhanes_phthalates_adults.rds")
+
+dat <- log1p(dat)
 
 # ---- Plot Correlation Matrix (Raw Data) ----
 library(pheatmap)
@@ -32,32 +35,6 @@ pairs(Y_raw, labels = colnames(Y_raw), main = "Scatterplot Matrix (All Variables
 
 
 ```{r fig.width=14, fig.height=6, out.width='100%'}
-set.seed(26031980)
-
-# 1) Prepare data
-Y <- scale(dat, center = TRUE, scale = TRUE)
-P <- ncol(Y)
-n <- nrow(Y)
-
-# 2) MoM-Trio estimator
-C <- cov(Y)
-lambda2_est <- numeric(P)
-for (p in 1:P) {
-  vals <- c()
-  idx  <- setdiff(1:P, p)
-  for (i in seq_along(idx)) {
-    q <- idx[i]
-    for (r in idx[-seq_len(i)]) {
-      if (abs(C[q, r]) > 0.02) {
-        vals <- c(vals, C[p, q] * C[p, r] / C[q, r])
-      }
-    }
-  }
-  lambda2_est[p] <- mean(vals, na.rm = TRUE)
-}
-lambda_trio <- sign(lambda2_est) * sqrt(abs(lambda2_est))
-lambda_trio <- lambda_trio / sqrt(sum(lambda_trio^2)) # L2 normalize
-
 # MoM-Trio scores
 set.seed(26031980)
 
@@ -127,10 +104,10 @@ par(mfrow = c(1, 1))
 
 ```{r}
 # Paths to fits (already loaded as shown)
-fit_dir <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit"
-fit_MGSP <- readRDS(file.path(fit_dir, "MGSP", "fit_joint_NHANES1718_k1.rds"))
-fit_HS   <- readRDS(file.path(fit_dir, "Horseshoe", "fit_HS_NHANES1718_k1.rds"))
-fit_SSL  <- readRDS(file.path(fit_dir, "spike_slab", "fit_SSL_NHANES1718_k1.rds"))
+fit_dir <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes"
+fit_MGSP <- readRDS(file.path(fit_dir, "fit_Joint_NHANES1718_k1_log.rds"))
+fit_HS   <- readRDS(file.path(fit_dir, "fit_HS_NHANES1718_k1_log.rds"))
+fit_SSL  <- readRDS(file.path(fit_dir, "fit_SSL_NHANES1718_k1_log.rds"))
 
 # --- Overwrite fit$Lambda_hat with normalized loadings (only ONCE here) ---
 fit_MGSP$Lambda_hat <- as.numeric(fit_MGSP$Lambda_hat)
@@ -141,6 +118,11 @@ fit_HS$Lambda_hat <- fit_HS$Lambda_hat / sqrt(sum(fit_HS$Lambda_hat^2))
 
 fit_SSL$Lambda_hat <- as.numeric(fit_SSL$Lambda_hat)
 fit_SSL$Lambda_hat <- fit_SSL$Lambda_hat / sqrt(sum(fit_SSL$Lambda_hat^2))
+
+# Your Y matrix:
+Y <- scale(dat, center = TRUE, scale = TRUE)
+n <- nrow(Y)
+P <- ncol(Y)
 
 # Function to create all 3 dataframes for a fit (no normalization here)
 make_fit_dfs <- function(Lambda_hat, Y) {
@@ -577,34 +559,6 @@ plot_hist_with_null(offdiag_after_hs, offdiag_null, "Horseshoe: After", col="fir
 plot_hist_with_null(offdiag_after_ssl, offdiag_null, "Spike-and-Slab: After", col="firebrick", after=TRUE)
 par(mfrow = c(1,1))
 
-# --- DSC distance calculation functions (copy if not already sourced) ---
-fisher_z <- function(r) 0.5 * log((1 + r) / (1 - r))
-dsc <- function(corrs, mu2, sd2, sk2, ku2) {
-   mu1 <- mean(corrs)
-   sd1 <- sd(corrs)
-   sk1 <- if (sd1 < 1e-12) 0 else mean((corrs - mu1)^3) / sd1^3
-   ku1 <- if (sd1 < 1e-12) 0 else mean((corrs - mu1)^4) / sd1^4
-   sk_diff <- abs(sk1)^(1/3) - abs(sk2)^(1/3)
-   ku_diff <- abs(ku1)^(1/4) - abs(ku2)^(1/4)
-   sqrt((mu1 - mu2)^2 + (sd1 - sd2)^2 + sk_diff^2 + ku_diff^2)
-}
-dsc_with_permutation_null_vec <- function(vec, B=500) {
-   z_obs <- fisher_z(vec)
-   dsc_null <- numeric(B)
-   mu2s <- sd2s <- sk2s <- ku2s <- numeric(B)
-   for (b in 1:B) {
-      null_perm <- sample(vec)
-      z_perm <- fisher_z(null_perm)
-      mu2s[b] <- mean(z_perm)
-      sd2s[b] <- sd(z_perm)
-      sk2s[b] <- if (sd2s[b] < 1e-12) 0 else mean((z_perm - mu2s[b])^3) / sd2s[b]^3
-      ku2s[b] <- if (sd2s[b] < 1e-12) 0 else mean((z_perm - mu2s[b])^4) / sd2s[b]^4
-      dsc_null[b] <- dsc(z_obs, mu2s[b], sd2s[b], sk2s[b], ku2s[b])
-   }
-   dsc_obs <- dsc(z_obs, mean(mu2s), mean(sd2s), mean(sk2s), mean(ku2s))
-   list(dsc_obs = dsc_obs, dsc_null = dsc_null)
-}
-
 B <- 500 # Number of permutation null draws
 cat("\n===== DSC Distance to Permutation Null (Z-Fisher) =====\n")
 
@@ -648,7 +602,6 @@ cat("\n=============================================\n")
 
 ```{r fig.width=14, fig.height=14, out.width='100%'}
 # ---- Visualize observed vs predicted (per subject) for each method ----
-
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
 dat <- readRDS("nhanes_phthalates_adults.rds")
 #dat <- log1p(dat)
@@ -687,7 +640,6 @@ plot_subject_fits(Y, lambda_ssl, b_ssl, "Spike-and-Slab")
 
 ```
 
-
 ```{r}
 plot_subject_fit_for_id <- function(Y, lambda, b, method_name, subject_id) {
   varnames <- colnames(Y)
@@ -722,12 +674,18 @@ plot_subject_fit_for_id(Y, lambda_ssl, b_ssl, "Spike-and-Slab", 1118)
 ```{r}
 # ---- MoM-Trio Bootstrap: CIs for loadings and scores (NHANES) ----
 
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
+dat <- readRDS("nhanes_phthalates_adults.rds")
+dat <- log1p(dat)
+Y <- scale(dat, center = TRUE, scale = TRUE)
+
 set.seed(888)
 nboot <- 500
 n     <- nrow(Y)
 P     <- ncol(Y)
 lambda_boot <- matrix(NA, nboot, P)
 b_boot      <- matrix(NA, nboot, n)
+
 
 for (b in 1:nboot) {
   idx <- sample(1:n, replace = TRUE)
@@ -771,6 +729,8 @@ colnames(b_ci) <- c("lower", "median", "upper")
 cat("\n=== 95% CIs for MoM-Trio b_i (first 5 subjects, NHANES) ===\n")
 print(b_ci[1:5, ])
 
+
+
 # Optional: Plot the CIs for all loadings
 par(mfrow = c(1, 1))
 matplot(1:P, lambda_ci, type = "l", lty = c(2,1,2), col = c("gray30","red","gray30"),
@@ -786,6 +746,8 @@ cat(sprintf("\nSubject %d: 95%% CI for b = (%.3f, %.3f)\n", subject_id, b_ci[sub
 ```
 
 
+
+
 ```{r}
 # ---- Compare lambda1_bi (subject-level first factor scores) between methods ----
 
@@ -797,9 +759,6 @@ compare_lambda1_bi <- data.frame(
   Spike_and_Slab= lambda_ssl[1]     * b_ssl
 )
 
-# Pairwise scatterplots for all methods
-pairs(compare_lambda1_bi, main = "Pairwise lambda1_bi: All Methods", pch=20, cex=0.7)
-
 # Example: Compare MoM-Trio vs MGSP
 plot(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$MGSP,
      xlab = "MoM-Trio: lambda1_bi", ylab = "MGSP: lambda1_bi",
@@ -807,10 +766,14 @@ plot(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$MGSP,
      pch = 20, col = rgb(0.2,0.2,0.7,0.5))
 abline(0,1,col="red",lwd=2)
 grid()
+
+# Add correlation for reference
 cor_val <- cor(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$MGSP)
 legend("topleft", legend = sprintf("Corr = %.3f", cor_val), bty = "n")
 
-# Example: MoM-Trio vs Horseshoe
+# --- Repeat for other pairs as needed ---
+
+# MoM-Trio vs Horseshoe
 plot(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$Horseshoe,
      xlab = "MoM-Trio: lambda1_bi", ylab = "Horseshoe: lambda1_bi",
      main = "MoM-Trio vs Horseshoe: lambda1_bi",
@@ -820,7 +783,7 @@ grid()
 cor_val <- cor(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$Horseshoe)
 legend("topleft", legend = sprintf("Corr = %.3f", cor_val), bty = "n")
 
-# Example: MoM-Trio vs Spike-and-Slab
+# MoM-Trio vs Spike-and-Slab
 plot(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$Spike_and_Slab,
      xlab = "MoM-Trio: lambda1_bi", ylab = "Spike-and-Slab: lambda1_bi",
      main = "MoM-Trio vs Spike-and-Slab: lambda1_bi",
@@ -830,11 +793,8 @@ grid()
 cor_val <- cor(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$Spike_and_Slab)
 legend("topleft", legend = sprintf("Corr = %.3f", cor_val), bty = "n")
 
-# Optionally, check differences as histograms
-hist(compare_lambda1_bi$MoM_Trio - compare_lambda1_bi$MGSP,
-     main="MoM-Trio minus MGSP (lambda1_bi)",
-     xlab="Difference", col="skyblue")
+# You can also look at all pairwise scatterplots at once:
+pairs(compare_lambda1_bi, main = "Pairwise lambda1_bi: All Methods", pch=20, cex=0.7)
 
 ```
-
 
