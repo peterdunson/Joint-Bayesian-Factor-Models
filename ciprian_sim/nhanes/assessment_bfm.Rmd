@@ -758,7 +758,7 @@ plot_subject_fit_for_id(Y, lambda_ssl, b_ssl, "Spike-and-Slab", 1118)
 # ---- MoM-Trio Bootstrap: CIs for loadings and scores (NHANES) ----
 
 set.seed(888)
-nboot <- 500
+nboot <- 2000
 n     <- nrow(Y)
 P     <- ncol(Y)
 lambda_boot <- matrix(NA, nboot, P)
@@ -814,9 +814,27 @@ matplot(1:P, lambda_ci, type = "l", lty = c(2,1,2), col = c("gray30","red","gray
 axis(1, at = 1:P, labels = colnames(Y), las = 2, cex.axis=0.7)
 legend("topright", legend = c("Lower", "Median", "Upper"), lty = c(2,1,2), col = c("gray30","red","gray30"), bty="n")
 
-# Optional: Show one subject's score CIs
-subject_id <- 1
-cat(sprintf("\nSubject %d: 95%% CI for b = (%.3f, %.3f)\n", subject_id, b_ci[subject_id,1], b_ci[subject_id,3]))
+# --- Plot MoM-Trio Lambda Squared (λ²) Bootstrap CIs ---
+
+# Compute λ² for all bootstrap samples
+lambda2_boot <- lambda_boot^2
+
+# 95% CIs for λ²
+lambda2_ci <- t(apply(lambda2_boot, 2, quantile, probs = c(0.025, 0.5, 0.975), na.rm = TRUE))
+colnames(lambda2_ci) <- c("lower", "median", "upper")
+rownames(lambda2_ci) <- colnames(Y)
+
+cat("\n=== 95% CIs for MoM-Trio Lambda Squared (λ², NHANES) ===\n")
+print(round(lambda2_ci, 5))
+
+# Plot
+par(mfrow = c(1, 1))
+matplot(1:P, lambda2_ci, type = "l", lty = c(2,1,2), col = c("gray50", "red", "gray50"),
+        main = "MoM-Trio Lambda Squared (Bootstrap 95% CIs)", xlab = "Variable", ylab = expression(lambda^2),
+        xaxt = "n")
+axis(1, at = 1:P, labels = colnames(Y), las = 2, cex.axis = 0.7)
+legend("topright", legend = c("Lower", "Median", "Upper"),
+       lty = c(2,1,2), col = c("gray50", "red", "gray50"), bty = "n")
 
 ```
 
