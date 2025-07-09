@@ -563,10 +563,7 @@ offdiag_after_ssl  <- get_upper(cor_after_ssl)
 
 # ---- Plot: Before (blue) ----
 par(mfrow = c(2,2), mar = c(4,4,3,1))
-plot_hist_with_null(offdiag_before_trio, offdiag_null, "MoM-Trio: Before", col="dodgerblue")
-plot_hist_with_null(offdiag_before_mgsp, offdiag_null, "MGSP: Before", col="dodgerblue")
-plot_hist_with_null(offdiag_before_hs, offdiag_null, "Horseshoe: Before", col="dodgerblue")
-plot_hist_with_null(offdiag_before_ssl, offdiag_null, "Spike-and-Slab: Before", col="dodgerblue")
+plot_hist_with_null(offdiag_before_trio, offdiag_null, "Before", col="dodgerblue")
 par(mfrow = c(1,1))
 
 # ---- Plot: After (red) ----
@@ -577,69 +574,28 @@ plot_hist_with_null(offdiag_after_hs, offdiag_null, "Horseshoe: After", col="fir
 plot_hist_with_null(offdiag_after_ssl, offdiag_null, "Spike-and-Slab: After", col="firebrick", after=TRUE)
 par(mfrow = c(1,1))
 
-# --- DSC distance calculation functions (copy if not already sourced) ---
-fisher_z <- function(r) 0.5 * log((1 + r) / (1 - r))
-dsc <- function(corrs, mu2, sd2, sk2, ku2) {
-   mu1 <- mean(corrs)
-   sd1 <- sd(corrs)
-   sk1 <- if (sd1 < 1e-12) 0 else mean((corrs - mu1)^3) / sd1^3
-   ku1 <- if (sd1 < 1e-12) 0 else mean((corrs - mu1)^4) / sd1^4
-   sk_diff <- abs(sk1)^(1/3) - abs(sk2)^(1/3)
-   ku_diff <- abs(ku1)^(1/4) - abs(ku2)^(1/4)
-   sqrt((mu1 - mu2)^2 + (sd1 - sd2)^2 + sk_diff^2 + ku_diff^2)
-}
-dsc_with_permutation_null_vec <- function(vec, B=500) {
-   z_obs <- fisher_z(vec)
-   dsc_null <- numeric(B)
-   mu2s <- sd2s <- sk2s <- ku2s <- numeric(B)
-   for (b in 1:B) {
-      null_perm <- sample(vec)
-      z_perm <- fisher_z(null_perm)
-      mu2s[b] <- mean(z_perm)
-      sd2s[b] <- sd(z_perm)
-      sk2s[b] <- if (sd2s[b] < 1e-12) 0 else mean((z_perm - mu2s[b])^3) / sd2s[b]^3
-      ku2s[b] <- if (sd2s[b] < 1e-12) 0 else mean((z_perm - mu2s[b])^4) / sd2s[b]^4
-      dsc_null[b] <- dsc(z_obs, mu2s[b], sd2s[b], sk2s[b], ku2s[b])
-   }
-   dsc_obs <- dsc(z_obs, mean(mu2s), mean(sd2s), mean(sk2s), mean(ku2s))
-   list(dsc_obs = dsc_obs, dsc_null = dsc_null)
-}
 
-B <- 500 # Number of permutation null draws
-cat("\n===== DSC Distance to Permutation Null (Z-Fisher) =====\n")
 
-print_dsc_results <- function(name, dsc_obs, dsc_null) {
-  cat(sprintf(
-    "%-15s | Observed DSC = %.3f | Null Mean DSC = %.3f | Null SD = %.3f\n",
-    name, dsc_obs, mean(dsc_null), sd(dsc_null)
-  ))
-}
+B <- 500
 
-# MoM-Trio
-dsc_trio_before <- dsc_with_permutation_null_obs(Y, B = B)
-print_dsc_results("MoM-Trio: BEFORE", dsc_trio_before$dsc_obs, dsc_trio_before$dsc_null)
-dsc_trio_after <- dsc_with_permutation_null_obs(Y_resid_trio, B = B)
-print_dsc_results("MoM-Trio: AFTER", dsc_trio_after$dsc_obs, dsc_trio_after$dsc_null)
+# Original data
+dsc_before <- dsc_with_permutation_null_obs(Y, B = B)
+dsc_orig   <- dsc_before$dsc_obs
 
-# MGSP
-dsc_mgsp_before <- dsc_with_permutation_null_obs(Y, B = B)
-print_dsc_results("MGSP: BEFORE", dsc_mgsp_before$dsc_obs, dsc_mgsp_before$dsc_null)
-dsc_mgsp_after <- dsc_with_permutation_null_obs(Y_resid_mgsp, B = B)
-print_dsc_results("MGSP: AFTER", dsc_mgsp_after$dsc_obs, dsc_mgsp_after$dsc_null)
+# Each method (assuming you have Lambda_hat for each)
+dsc_trio    <- dsc_with_permutation_null_resid(Y, matrix(lambda_trio, ncol = 1), B = B)
+dsc_mgsp    <- dsc_with_permutation_null_resid(Y, matrix(lambda_mgsp, ncol = 1), B = B)
+dsc_hs      <- dsc_with_permutation_null_resid(Y, matrix(lambda_hs, ncol = 1), B = B)
+dsc_ssl     <- dsc_with_permutation_null_resid(Y, matrix(lambda_ssl, ncol = 1), B = B)
 
-# Horseshoe
-dsc_hs_before <- dsc_with_permutation_null_obs(Y, B = B)
-print_dsc_results("Horseshoe: BEFORE", dsc_hs_before$dsc_obs, dsc_hs_before$dsc_null)
-dsc_hs_after <- dsc_with_permutation_null_obs(Y_resid_hs, B = B)
-print_dsc_results("Horseshoe: AFTER", dsc_hs_after$dsc_obs, dsc_hs_after$dsc_null)
+# Combine into a table
+dsc_table <- data.frame(
+  Method = c("Original Data", "MoM-Trio Residual", "MGSP Residual", "Horseshoe Residual", "Spike-and-Slab Residual"),
+  DSC = round(c(dsc_orig, dsc_trio$dsc_resid, dsc_mgsp$dsc_resid, dsc_hs$dsc_resid, dsc_ssl$dsc_resid), 3)
+)
 
-# Spike-and-Slab
-dsc_ssl_before <- dsc_with_permutation_null_obs(Y, B = B)
-print_dsc_results("Spike-and-Slab: BEFORE", dsc_ssl_before$dsc_obs, dsc_ssl_before$dsc_null)
-dsc_ssl_after <- dsc_with_permutation_null_obs(Y_resid_ssl, B = B)
-print_dsc_results("Spike-and-Slab: AFTER", dsc_ssl_after$dsc_obs, dsc_ssl_after$dsc_null)
+print(dsc_table)
 
-cat("\n=============================================\n")
 
 
 ```
