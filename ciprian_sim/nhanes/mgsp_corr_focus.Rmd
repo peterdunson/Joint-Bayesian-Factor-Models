@@ -1,8 +1,8 @@
 ---
-title: "mgsp_corr_focus"
-author: "Peter"
-date: "`r Sys.Date()`"
-output: html_document
+title: "mgps_corr_focus"
+output:
+  html_document:
+    code_folding: hide
 ---
 
 ```{r}
@@ -40,7 +40,7 @@ Y_resid <- Y - Y_hat_full
 
 
 
-```{r}
+```{r fig.width=14, fig.height=14, out.width='100%'}
 library(pheatmap)
 
 # Correlation matrices
@@ -154,12 +154,13 @@ print(round(cor_after_mgsp, 3))
 
 
 
-```{r fig.width=8, fig.height=8, out.width='100%'}
+```{r fig.width=14, fig.height=14, out.width='100%'}
 # BEFORE: all variables
 pairs(
   Y,
   pch = 20,
-  cex = 0.4,
+  cex = 0.1,
+  col = adjustcolor("black", alpha.f = 0.3),
   main = "Pairwise Scatterplots: All Variables (Before K=1 Removal)"
 )
 
@@ -167,7 +168,8 @@ pairs(
 pairs(
   Y_resid,
   pch = 20,
-  cex = 0.4,
+  cex = 0.1,
+  col = adjustcolor("black", alpha.f = 0.3),
   main = "Pairwise Scatterplots: All Variables (After K=1 Removal, MGSP)"
 )
 

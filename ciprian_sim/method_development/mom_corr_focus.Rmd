@@ -461,14 +461,14 @@ pairs(
 pairs(
   Y,
   main = "Pairwise Scatterplots: All Variables (Before)",
-  pch = 20, cex = 0.5
+  pch = 20, cex = 0.1, col = adjustcolor("black", alpha.f = 0.3)
 )
 
 # After K=1 removal
 pairs(
   Y_resid,
   main = "Pairwise Scatterplots: All Variables (After K=1 Removal)",
-  pch = 20, cex = 0.5
+  pch = 20, cex = 0.1, col = adjustcolor("black", alpha.f = 0.3)
 )
 
 ```
