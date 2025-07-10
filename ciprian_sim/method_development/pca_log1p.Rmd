@@ -39,8 +39,9 @@ par(mfrow = c(1, 1))
 
 # 4. (Optional) Print first few proportions
 cat("Proportion of variance explained (first 10 PCs):\n")
-print(round(var_explained[1:10], 4))
+print(round(var_explained[1:15], 4))
 
+summary(pca_fit)
 ```
 
 

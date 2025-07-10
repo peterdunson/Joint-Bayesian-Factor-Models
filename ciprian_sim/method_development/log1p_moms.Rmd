@@ -15,7 +15,7 @@ dat <- log1p(dat)
 # ---- Plot Correlation Matrix (Raw Data) ----
 library(pheatmap)
 
-Y_raw <- scale(dat, center = TRUE, scale = TRUE)  # If you want raw (unscaled), use: Y_raw <- as.matrix(dat)
+Y_raw <- scale(dat, center = TRUE, scale = TRUE)
 cor_raw <- cor(Y_raw)
 pheatmap(
   cor_raw,
@@ -661,6 +661,7 @@ print(dsc_table)
 ```
 
 
+#BELOW IS NOT LOG TRANSFORMED
 
 ```{r fig.width=14, fig.height=14, out.width='100%'}
 # ---- Visualize observed vs predicted (per subject) for each method ----
@@ -732,6 +733,7 @@ plot_subject_fit_for_id(Y, lambda_ssl, b_ssl, "Spike-and-Slab", 1118)
 ```
 
 
+#NOW IT IS LOG TRANSFORMED AGAIN
 
 ```{r}
 # ---- MoM-Trio Bootstrap: CIs for loadings and scores (NHANES) ----
