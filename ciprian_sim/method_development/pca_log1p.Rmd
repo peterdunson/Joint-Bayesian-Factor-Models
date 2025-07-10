@@ -1,0 +1,48 @@
+---
+title: "pca_log1p"
+author: "Peter"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+#Can you do a PCA on the log transformed NHANES data and check the proportion of variance explained?
+
+```{r}
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
+dat <- readRDS("nhanes_phthalates_adults.rds")
+
+dat <- log1p(dat)
+
+Y <- scale(dat, center = TRUE, scale = TRUE) 
+```
+
+
+```{r}
+
+# 1. Run PCA (prcomp expects observations in rows, variables in columns)
+pca_fit <- prcomp(Y, center = FALSE, scale. = FALSE)
+
+# 2. Get the proportion of variance explained
+var_explained <- pca_fit$sdev^2 / sum(pca_fit$sdev^2)
+
+# 3. Plot: Scree plot and cumulative variance explained
+par(mfrow = c(1, 2))
+# Scree plot
+plot(var_explained, type = "b", pch = 16,
+     xlab = "Principal Component", ylab = "Proportion of Variance Explained",
+     main = "Scree Plot: Variance Explained")
+# Cumulative
+plot(cumsum(var_explained), type = "b", pch = 16,
+     xlab = "Principal Component", ylab = "Cumulative Variance Explained",
+     main = "Cumulative Variance Explained")
+par(mfrow = c(1, 1))
+
+# 4. (Optional) Print first few proportions
+cat("Proportion of variance explained (first 10 PCs):\n")
+print(round(var_explained[1:10], 4))
+
+```
+
+
+
+

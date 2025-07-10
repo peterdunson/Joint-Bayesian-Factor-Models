@@ -936,3 +936,60 @@ par(mfrow=c(1,1), mar=c(5,4,4,2)+0.1)
 
 
 
+
+
+```{r fig.width=14, fig.height=10, out.width='100%'}
+# --- List of methods and associated vectors ---
+methods <- list(
+  "MoM-Trio"      = list(lambda = lambda_trio,      b = b_trio),
+  "MGSP"          = list(lambda = lambda_mgsp,      b = b_mgsp),
+  "Horseshoe"     = list(lambda = lambda_hs,        b = b_hs),
+  "Spike-and-Slab"= list(lambda = lambda_ssl,       b = b_ssl)
+)
+
+C <- cor(Y)  # Empirical correlation matrix
+
+# --- Loop over each method ---
+for (method_name in names(methods)) {
+  cat("\n====", method_name, "====\n")
+  lambda <- methods[[method_name]]$lambda
+  b <- methods[[method_name]]$b
+  
+  # 1. Lambda outer product vs empirical correlation
+  lambda_outer <- outer(lambda, lambda)
+  cor_val <- cor(as.vector(lambda_outer), as.vector(C))
+  plot(
+    as.vector(lambda_outer), as.vector(C),
+    xlab = expression(lambda[p]*lambda[r]),
+    ylab = "Empirical correlation C[pr]",
+    main = paste0(method_name, ": Lambda Outer vs Cor (Corr = ", round(cor_val, 3), ")"),
+    pch = 20, col = rgb(0.2,0.5,0.8,0.5)
+  )
+  abline(0,1,col="red",lwd=2)
+  legend("topleft", legend = sprintf("Corr = %.3f", cor_val), bty = "n")
+  
+  # 2. Residuals and linear predictors
+  resid <- Y - outer(b, lambda)
+  linear_pred <- outer(b, lambda)
+  
+  # Normality QQ plots
+  par(mfrow = c(1, 2))
+   qqnorm(as.vector(resid), main = paste(method_name, "QQ Res")); 
+   qqline(as.vector(resid), col = "red", lwd = 2)
+   qqnorm(as.vector(linear_pred), main = paste(method_name, "QQ LP"));
+   qqline(as.vector(linear_pred), col = "red", lwd = 2)
+   par(mfrow = c(1, 1))
+
+  
+  # Shapiro-Wilk tests
+  set.seed(1)
+  sw_resid <- shapiro.test(sample(as.vector(resid), min(5000, length(as.vector(resid)))))
+  cat("Shapiro-Wilk p (residuals):", round(sw_resid$p.value, 4), "\n")
+  
+  sw_linpred <- shapiro.test(sample(as.vector(linear_pred), min(5000, length(as.vector(linear_pred)))))
+  cat("Shapiro-Wilk p (linear predictors):", round(sw_linpred$p.value, 4), "\n")
+}
+
+```
+
+
