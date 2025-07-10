@@ -1,0 +1,240 @@
+---
+title: "mgsp_corr_focus"
+author: "Peter"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+# ---- Load Full Data and Fit ----
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
+dat <- readRDS("nhanes_phthalates_adults.rds")
+dat <- log1p(dat)
+Y <- scale(dat, center = TRUE, scale = TRUE)
+n <- nrow(Y)
+P <- ncol(Y)
+
+# Vars used in fit:
+mgsp_vars <- c("URXECP", "URXMHH", "URXMOH")
+
+# Load MGSP fit
+fit_mgsp <- readRDS("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes/fit_MGSP_NHANES1718_k1_3var.rds")
+lambda_mgsp <- as.numeric(fit_mgsp$Lambda_hat[,1]) # Should be length 3, K=1
+
+# Normalize (optional, but keeps consistent with MoM code)
+lambda_mgsp <- lambda_mgsp / sqrt(sum(lambda_mgsp^2))
+
+# Project MGSP factor scores for all n samples (using only the 3 fit variables)
+Y3 <- Y[, mgsp_vars, drop = FALSE]
+b_mgsp <- as.numeric(Y3 %*% lambda_mgsp) / sum(lambda_mgsp^2)
+
+# ---- Project K=1 Factor Back to All Variables ----
+lambda_all <- numeric(P)
+lambda_all[match(mgsp_vars, colnames(Y))] <- lambda_mgsp
+Y_hat_full <- outer(b_mgsp, lambda_all)  # n x P
+
+# Y_resid = full data minus K=1 projection
+Y_resid <- Y - Y_hat_full
+
+```
+
+
+
+```{r}
+library(pheatmap)
+
+# Correlation matrices
+cor_before <- cor(Y)
+cor_after  <- cor(Y_resid)
+
+breaks <- seq(-1, 1, length.out = 101)
+colors <- colorRampPalette(c("blue", "white", "red"))(100)
+
+# BEFORE
+pheatmap(
+  cor_before, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = colors, breaks = breaks,
+  main = "Correlation Matrix (All Variables) BEFORE K=1 Removal",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = colnames(Y), labels_col = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9
+)
+
+# AFTER
+pheatmap(
+  cor_after, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = colors, breaks = breaks,
+  main = "Correlation Matrix (All Variables) AFTER K=1 Removal (MGSP)",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = colnames(Y), labels_col = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9
+)
+
+```
+
+
+```{r}
+get_upper <- function(mat) mat[upper.tri(mat)]
+
+offdiag_before <- get_upper(cor_before)
+offdiag_after  <- get_upper(cor_after)
+
+# Permute each column of Y independently for null distribution
+set.seed(123)
+Y_perm <- apply(Y, 2, sample)
+cor_perm <- cor(Y_perm)
+offdiag_perm <- get_upper(cor_perm)
+
+par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+
+# BEFORE: Histogram with permutation null overlay
+hist(offdiag_before,
+     breaks = 30,
+     main = "Pairwise Correlations (Before)",
+     xlab = "Correlation",
+     col = "dodgerblue",
+     border = "white",
+     freq = FALSE,
+     xlim = c(-1, 1),
+     ylim = c(0, 5))
+lines(density(offdiag_perm), lwd = 2, lty = 2, col = "black")
+legend("topright", legend = c("Observed", "Permutation Null"),
+       col = c("dodgerblue", "black"), lwd = 2, lty = c(1, 2), bty = "n", cex = 0.9)
+
+# AFTER: Histogram with permutation null overlay
+hist(offdiag_after,
+     breaks = 30,
+     main = "Pairwise Correlations (After K=1 Removal, MGSP)",
+     xlab = "Correlation",
+     col = "firebrick",
+     border = "white",
+     freq = FALSE,
+     xlim = c(-1, 1),
+     ylim = c(0, 5))
+lines(density(offdiag_perm), lwd = 2, lty = 2, col = "black")
+legend("topright", legend = c("Observed", "Permutation Null"),
+       col = c("firebrick", "black"), lwd = 2, lty = c(1, 2), bty = "n", cex = 0.9)
+
+par(mfrow = c(1, 1))
+
+```
+
+
+
+```{r}
+# Pairwise scatterplot: 3 MGSP variables BEFORE
+pairs(
+  Y[, mgsp_vars], 
+  pch = 20, 
+  cex = 0.6,
+  main = "Pairwise Scatterplots: MGSP Variables (Before K=1 Removal)"
+)
+
+# Pairwise scatterplot: 3 MGSP variables AFTER
+pairs(
+  Y_resid[, mgsp_vars], 
+  pch = 20, 
+  cex = 0.6,
+  main = "Pairwise Scatterplots: MGSP Variables (After K=1 Removal, MGSP)"
+)
+
+# --- Correlations of MGSP vars before and after K=1 removal (whole dataset) ---
+cor_before_mgsp <- cor(Y[, mgsp_vars])
+cor_after_mgsp  <- cor(Y_resid[, mgsp_vars])
+
+cat("\n=== Correlation Matrix of MGSP Variables (Before K=1 Removal) ===\n")
+print(round(cor_before_mgsp, 3))
+
+cat("\n=== Correlation Matrix of MGSP Variables (After K=1 Removal) ===\n")
+print(round(cor_after_mgsp, 3))
+
+
+```
+
+
+
+
+```{r fig.width=8, fig.height=8, out.width='100%'}
+# BEFORE: all variables
+pairs(
+  Y,
+  pch = 20,
+  cex = 0.4,
+  main = "Pairwise Scatterplots: All Variables (Before K=1 Removal)"
+)
+
+# AFTER: all variables
+pairs(
+  Y_resid,
+  pch = 20,
+  cex = 0.4,
+  main = "Pairwise Scatterplots: All Variables (After K=1 Removal, MGSP)"
+)
+
+```
+
+
+```{r}
+cat("=== MGSP K=1 Loadings for Selected Variables ===\n")
+names(lambda_mgsp) <- mgsp_vars
+print(lambda_mgsp)
+
+```
+
+
+
+
+```{r}
+# --- Prereqs: assumes you have run your previous code up to Y_resid, etc. ---
+# mgsp_vars, Y, Y_resid, Y_hat_full are all in memory.
+
+# 1. Find individual (row) with minimum residual for each variable
+min_resid_idx <- sapply(mgsp_vars, function(var) which.min(Y_resid[, var]))
+names(min_resid_idx) <- mgsp_vars
+
+# 2. Print their values: before, fit, after
+cat("=== Individual(s) with Minimum Residual for Each Variable ===\n")
+for (var in mgsp_vars) {
+  idx <- min_resid_idx[var]
+  # Get column index for use in Y_hat_full
+  col_j <- match(var, colnames(Y))
+  cat(sprintf("\nVariable: %s, Row: %d\n", var, idx))
+  cat(sprintf("  Scaled value before removal:   %.3f\n", Y[idx, var]))
+  cat(sprintf("  Fitted value (Y_hat_full):     %.3f\n", Y_hat_full[idx, col_j]))
+  cat(sprintf("  Residual after removal:        %.3f\n", Y_resid[idx, var]))
+}
+
+# 3. Plot residual histogram for each, mark that individual
+par(mfrow = c(1, 3), mar = c(4, 4, 3, 1))
+for (var in mgsp_vars) {
+  idx <- min_resid_idx[var]
+  resids <- Y_resid[, var]
+  hist(resids,
+       breaks = 30,
+       main = paste0("Residuals for ", var),
+       xlab = "Residual",
+       col = "gray",
+       border = "white")
+  abline(v = resids[idx], col = "red", lwd = 2, lty = 2)
+  legend("topright", legend = paste("Min Residual (ID:", idx, ")"),
+         col = "red", lwd = 2, lty = 2, bty = "n", cex = 0.9)
+}
+par(mfrow = c(1, 1))
+
+# 4. (Optional) Summary table using column indices for Y_hat_full
+col_idx <- match(mgsp_vars, colnames(Y))
+summary_table <- data.frame(
+  variable      = mgsp_vars,
+  row_id        = as.integer(min_resid_idx),
+  value_before  = mapply(function(var, idx) Y[idx, var], mgsp_vars, min_resid_idx),
+  fit           = mapply(function(j, idx) Y_hat_full[idx, j], col_idx, min_resid_idx),
+  value_after   = mapply(function(var, idx) Y_resid[idx, var], mgsp_vars, min_resid_idx)
+)
+print(summary_table)
+
+```
+
+
+
+
+

@@ -1,0 +1,338 @@
+---
+title: "mom_corr_435"
+author: "Peter"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+
+```{r}
+
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
+dat <- readRDS("nhanes_phthalates_adults.rds")
+dat <- log1p(dat)  # Optional: log-transform
+
+dat <- dat[-435, ]
+
+library(pheatmap)
+
+Y <- scale(dat, center = TRUE, scale = TRUE)
+P <- ncol(Y)
+n <- nrow(Y)
+
+# ---- Use ONLY specified variables for MoM ----
+mom_vars <- c("URXECP", "URXMHH", "URXMOH")
+stopifnot(all(mom_vars %in% colnames(Y)))
+Y_top <- Y[, mom_vars, drop = FALSE]
+P1 <- ncol(Y_top)
+
+cat("\nVariables used for MoM K=1 estimation:\n", paste(mom_vars, collapse = ", "), "\n")
+
+# ---- MoM-Trio on Only These Variables ----
+C <- cov(Y_top)
+lambda2_est <- numeric(P1)
+for (p in 1:P1) {
+  vals <- c()
+  idx  <- setdiff(1:P1, p)
+  for (i in seq_along(idx)) {
+    q <- idx[i]
+    for (r in idx[-seq_len(i)]) {
+      if (abs(C[q, r]) > 0.02) {
+        vals <- c(vals, C[p, q] * C[p, r] / C[q, r])
+      }
+    }
+  }
+  lambda2_est[p] <- mean(vals, na.rm = TRUE)
+}
+lambda_trio <- sign(lambda2_est) * sqrt(abs(lambda2_est))
+lambda_trio <- lambda_trio / sqrt(sum(lambda_trio^2))
+
+# Project scores for all subjects
+b_trio <- as.numeric(Y_top %*% lambda_trio) / sum(lambda_trio^2)
+
+# ---- Project K=1 Factor Back to All Variables ----
+# (Prediction: b_trio times *all* P variables; uses mom_vars loadings, zeros elsewhere)
+lambda_all <- numeric(P)
+lambda_all[match(mom_vars, colnames(Y))] <- lambda_trio
+
+# Predicted values for all variables
+Y_hat_full <- outer(b_trio, lambda_all)  # n x P
+
+
+
+# ---- Full Correlation Matrices Before/After ----
+Y_resid <- Y - Y_hat_full
+
+cor_before <- cor(Y)
+cor_after <- cor(Y_resid)
+
+breaks <- seq(-1, 1, length.out = 101)
+colors <- colorRampPalette(c("blue", "white", "red"))(100)
+
+# Before
+pheatmap(
+  cor_before, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = colors, breaks = breaks,
+  main = "Correlation Matrix (All Variables) BEFORE K=1 Removal",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = colnames(Y), labels_col = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9
+)
+
+# After
+pheatmap(
+  cor_after, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = colors, breaks = breaks,
+  main = "Correlation Matrix (All Variables) AFTER K=1 Removal (Top Vars Only)",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = colnames(Y), labels_col = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9
+)
+# ---- Histograms of Correlations: Before and After with Permutation Null ----
+
+get_upper <- function(mat) mat[upper.tri(mat)]
+
+offdiag_before <- get_upper(cor_before)
+offdiag_after  <- get_upper(cor_after)
+
+# Permute each column of Y independently (null distribution)
+set.seed(123)
+Y_perm <- apply(Y, 2, sample)
+cor_perm <- cor(Y_perm)
+offdiag_perm <- get_upper(cor_perm)
+
+par(mfrow = c(1, 2), mar = c(4, 4, 3, 1))
+
+# Before: Histogram with permutation null overlay
+hist(offdiag_before,
+     breaks = 30,
+     main = "Pairwise Correlations (Before)",
+     xlab = "Correlation",
+     col = "dodgerblue",
+     border = "white",
+     freq = FALSE,
+     xlim = c(-1, 1),
+     ylim = c(0, 5))
+lines(density(offdiag_perm), lwd = 2, lty = 2, col = "black")
+legend("topright", legend = c("Observed", "Permutation Null"),
+       col = c("dodgerblue", "black"), lwd = 2, lty = c(1, 2), bty = "n", cex = 0.9)
+
+# After: Histogram with permutation null overlay
+hist(offdiag_after,
+     breaks = 30,
+     main = "Pairwise Correlations (After K=1 Removal)",
+     xlab = "Correlation",
+     col = "firebrick",
+     border = "white",
+     freq = FALSE,
+     xlim = c(-1, 1),
+     ylim = c(0, 5))
+lines(density(offdiag_perm), lwd = 2, lty = 2, col = "black")
+legend("topright", legend = c("Observed", "Permutation Null"),
+       col = c("firebrick", "black"), lwd = 2, lty = c(1, 2), bty = "n", cex = 0.9)
+
+par(mfrow = c(1, 1))
+
+
+
+```
+
+```{r}
+# ---- Investigate URXMHH Residual Correlations ----
+
+# Find column indices for the 3 variables
+vars_of_interest <- c("URXECP", "URXMHH", "URXMOH")
+idx_URXMHH <- which(colnames(Y) == "URXMHH")
+idx_others <- which(colnames(Y) %in% setdiff(vars_of_interest, "URXMHH"))
+
+cat("\nCorrelations of URXMHH with others (before K=1 removal):\n")
+for (j in idx_others) {
+  cat(sprintf("URXMHH -- %s : %.3f\n", colnames(Y)[j], cor_before[idx_URXMHH, j]))
+}
+
+cat("\nCorrelations of URXMHH with others (after K=1 removal):\n")
+for (j in idx_others) {
+  cat(sprintf("URXMHH -- %s : %.3f\n", colnames(Y)[j], cor_after[idx_URXMHH, j]))
+}
+
+# Optionally, plot residual URXMHH vs the other two
+par(mfrow = c(1, 2), mar = c(4,4,3,1))
+for (j in idx_others) {
+  plot(Y_resid[, idx_URXMHH], Y_resid[, j],
+       xlab = "URXMHH (residual)", ylab = sprintf("%s (residual)", colnames(Y)[j]),
+       main = sprintf("Residuals: URXMHH vs %s\nCor=%.3f",
+                      colnames(Y)[j], cor_after[idx_URXMHH, j]),
+       pch = 20, col = rgb(0.7, 0.2, 0.2, 0.5))
+  abline(h=0, lty=2, col="gray60"); abline(v=0, lty=2, col="gray60")
+}
+par(mfrow = c(1, 1))
+
+```
+
+```{r}
+# # ---- Heatmap of MoM Loadings for Selected Variables ----
+# library(pheatmap)
+# 
+# mom_loadings_mat <- matrix(lambda_trio, nrow = 1)
+# colnames(mom_loadings_mat) <- mom_vars
+# rownames(mom_loadings_mat) <- "MoM K=1"
+# 
+# pheatmap(
+#   mom_loadings_mat,
+#   cluster_rows = FALSE, cluster_cols = FALSE,
+#   color = colorRampPalette(c("white", "orange", "red"))(50),
+#   main = "MoM K=1 Loadings (URXECP, URXMHH, URXMOH)",
+#   fontsize_row = 11, fontsize_col = 12,
+#   legend = TRUE
+# )
+# 
+
+```
+
+```{r}
+# ---- Print MoM Loadings (for selected variables) ----
+cat("\nMoM K=1 Loadings for selected variables:\n")
+for (i in seq_along(mom_vars)) {
+  cat(sprintf("%s: %.4f\n", mom_vars[i], lambda_trio[i]))
+}
+
+# ---- URXMHH: Investigate relationships ----
+
+# 1. Correlations of URXMHH with all other variables (before and after)
+idx_URXMHH <- which(colnames(Y) == "URXMHH")
+cor_URXMHH_before <- cor_before[idx_URXMHH, ]
+cor_URXMHH_after  <- cor_after[idx_URXMHH, ]
+
+cat("\nCorrelations of URXMHH with all variables (before):\n")
+print(round(cor_URXMHH_before, 3))
+cat("\nCorrelations of URXMHH with all variables (after):\n")
+print(round(cor_URXMHH_after, 3))
+
+# 2. Scatterplots of URXMHH vs other MoM variables (before and after)
+other_vars <- setdiff(mom_vars, "URXMHH")
+par(mfrow = c(2, length(other_vars)), mar = c(4,4,3,1))
+for (v in other_vars) {
+  plot(Y[, v], Y[, "URXMHH"],
+       xlab = v, ylab = "URXMHH",
+       main = paste("Before:", v, "vs URXMHH"), pch = 20, col = "dodgerblue")
+}
+for (v in other_vars) {
+  plot(Y_resid[, v], Y_resid[, "URXMHH"],
+       xlab = v, ylab = "URXMHH",
+       main = paste("After:", v, "vs URXMHH"), pch = 20, col = "firebrick")
+}
+par(mfrow = c(1,1))
+
+# 3. Histogram of residuals for URXMHH (after K=1 removal)
+hist(Y_resid[, "URXMHH"], breaks = 30, col = "orange",
+     main = "Histogram of URXMHH residuals (After K=1 removal)",
+     xlab = "Residual (URXMHH)")
+
+```
+
+```{r}
+# ---- URXECP: Scatterplots vs other MoM variables (before and after) ----
+other_vars_ecp <- setdiff(mom_vars, "URXECP")
+
+par(mfrow = c(2, length(other_vars_ecp)), mar = c(4,4,3,1))
+for (v in other_vars_ecp) {
+  plot(Y[, v], Y[, "URXECP"],
+       xlab = v, ylab = "URXECP",
+       main = paste("Before:", v, "vs URXECP"), pch = 20, col = "dodgerblue")
+}
+for (v in other_vars_ecp) {
+  plot(Y_resid[, v], Y_resid[, "URXECP"],
+       xlab = v, ylab = "URXECP",
+       main = paste("After:", v, "vs URXECP"), pch = 20, col = "firebrick")
+}
+par(mfrow = c(1,1))
+
+cat("\n--- Correlations with URXECP (Before) ---\n")
+for (v in other_vars_ecp) {
+  cor_val <- cor(Y[, "URXECP"], Y[, v])
+  cat(sprintf("URXECP vs %s: %.3f\n", v, cor_val))
+}
+
+cat("\n--- Correlations with URXECP (After) ---\n")
+for (v in other_vars_ecp) {
+  cor_val <- cor(Y_resid[, "URXECP"], Y_resid[, v])
+  cat(sprintf("URXECP vs %s: %.3f\n", v, cor_val))
+}
+
+```
+
+```{r}
+# --- Pairwise scatterplots for MoM variables before and after K=1 removal ---
+
+mom_vars <- c("URXECP", "URXMHH", "URXMOH")
+
+# Before removal
+pairs(
+  Y[, mom_vars, drop = FALSE],
+  main = "Pairwise Scatterplots: MoM Vars (Before)",
+  pch = 20, cex = 0.6
+)
+
+# After removal
+pairs(
+  Y_resid[, mom_vars, drop = FALSE],
+  main = "Pairwise Scatterplots: MoM Vars (After K=1 Removal)",
+  pch = 20, cex = 0.6
+)
+
+min_idx_resid <- which.min(Y_resid[, "URXECP"])
+min_val_resid <- Y_resid[min_idx_resid, "URXECP"]
+
+cat("Minimum URXECP residual is at row:", min_idx_resid, "with value:", min_val_resid, "\n")
+
+
+min_idx_resid <- which.min(Y_resid[, "URXECP"])
+dat[min_idx_resid, ]
+
+
+```
+
+```{r fig.width=14, fig.height=14, out.width='100%'}
+# --- Pairwise scatterplots for ALL variables before and after K=1 removal ---
+
+# Before K=1 removal
+pairs(
+  Y,
+  main = "Pairwise Scatterplots: All Variables (Before)",
+  pch = 20, cex = 0.5
+)
+
+# After K=1 removal
+pairs(
+  Y_resid,
+  main = "Pairwise Scatterplots: All Variables (After K=1 Removal)",
+  pch = 20, cex = 0.5
+)
+
+```
+
+```{r}
+# --- Examine residuals for key variables ---
+key_vars <- mom_vars  # c("URXECP", "URXMHH", "URXMOH")
+resids <- Y_resid[, key_vars]
+
+# Summary of residuals
+cat("\nSummary of residuals for key variables after K=1 removal:\n")
+print(summary(resids))
+
+# Plot histograms of residuals
+par(mfrow = c(1, length(key_vars)))
+for (j in key_vars) {
+  hist(resids[, j], main = paste("Residuals:", j), xlab = j, col = "gray", breaks = 30)
+}
+par(mfrow = c(1, 1))
+
+
+# --- Correlation among MoM variables after K=1 removal ---
+cat("\nCorrelation matrix among MoM variables AFTER K=1 removal:\n")
+print(cor(resids))
+
+
+
+```
+
