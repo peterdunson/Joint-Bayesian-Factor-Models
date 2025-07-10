@@ -2,14 +2,12 @@
 
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
 dat <- readRDS("nhanes_phthalates_adults.rds")
-#remove row 1118
-#dat <- dat[-1707,]
 dat <- log1p(dat)
 
 Y <- scale(dat, center = TRUE, scale = TRUE)
 n <- nrow(Y)
 p <- ncol(Y)
-K <- 1  # Set as desired (number of factors)
+K <- 5  # Set as desired (number of factors)
 
 
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/sparse_bayesian_infinite_factor_model")
@@ -48,7 +46,7 @@ saveRDS(
     posterior  = post_j,
     Lambda_hat = Lambda_j_hat
   ),
-  file = "fit_Joint_NHANES1718_k1_log.rds"
+  file = "fit_Joint_NHANES1718_k5_log.rds"
 )
 
 

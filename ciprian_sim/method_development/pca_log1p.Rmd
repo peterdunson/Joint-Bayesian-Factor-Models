@@ -45,5 +45,39 @@ summary(pca_fit)
 ```
 
 
+```{r}
+# 5. Examine variable loadings for the first 3 PCs
+loadings <- pca_fit$rotation  # Columns: PC1, PC2, PC3, ..., rows: variables
+
+# Option 1: Print top 5 variables (by absolute loading) for each PC
+for (pc in 1:3) {
+  cat(sprintf("\nTop variables for PC%d:\n", pc))
+  loading_pc <- loadings[, pc]
+  top_vars <- sort(abs(loading_pc), decreasing = TRUE)
+  print(head(data.frame(
+    Variable = names(top_vars),
+    Loading = loading_pc[names(top_vars)]
+  ), 19), row.names = FALSE)
+}
+
+# Barplot of ALL variable loadings for each of the first 3 PCs
+par(mfrow = c(1, 3), mar = c(8, 4, 3, 1))
+for (pc in 1:3) {
+  barplot(
+    loadings[, pc],
+    names.arg = rownames(loadings),
+    las = 2,
+    main = paste0("PC", pc, " Loadings"),
+    col = "skyblue",
+    cex.names = 0.7,       # Shrink axis labels so they fit
+    border = NA
+  )
+  abline(h = 0, col = "gray")
+}
+par(mfrow = c(1, 1))
+
+par(mfrow = c(1, 1))
+
+```
 
 

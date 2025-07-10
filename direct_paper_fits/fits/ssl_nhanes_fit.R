@@ -11,7 +11,7 @@ dat <- log1p(dat)
 Y <- scale(dat, center = TRUE, scale = TRUE)
 n <- nrow(Y)
 p <- ncol(Y)
-K <- 1 
+K <- 5 
 
 # ---- MODEL ----
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/continuous_spike_slab")
@@ -58,7 +58,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = "fit_SSL_NHANES1718_k1_log.rds"
+   file = "fit_SSL_NHANES1718_k5_log.rds"
 )
 
 sum_j      <- summary(fit_j)$summary

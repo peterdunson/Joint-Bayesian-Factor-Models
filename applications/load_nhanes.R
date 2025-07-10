@@ -20,10 +20,23 @@ download.file(
 library(haven)
 demo <- read_xpt("DEMO_J.xpt")
 
+
+getwd()
+
+# Update the path if your R working directory is not your Downloads folder
+bodymeasures <- read_xpt("/Users/peterdunson/Desktop/NHANES_bodymeasures_17-18.xpt")
+
+# Check what's inside
+str(bodymeasures)
+colnames(bodymeasures) # Look for "BMXBMI"
+
+
+
 str(phthalates)
 head(phthalates)
 colnames(phthalates)
 
+colnames(demo)
 
 phthalate_vars <- c(
   "URXCNP", "URXCOP", "URXECP", "URXECPT", "URXHIBP", "URXMBP",
@@ -39,7 +52,7 @@ phthalates_cc <- phthalates_selected[complete.cases(phthalates_selected[, phthal
 
 
 # Merge by SEQN
-merged <- merge(phthalates_cc, demo[, c("SEQN", "RIDAGEYR")], by = "SEQN")
+merged <- merge(phthalates_cc, demo[, c("SEQN", "RIDAGEYR" )], by = "SEQN")
 
 
 phthalates_adults <- merged[merged$RIDAGEYR >= 18, ]
@@ -58,9 +71,22 @@ dat <- phthalates_adults[, setdiff(names(phthalates_adults), c("SEQN", "RIDAGEYR
 saveRDS(dat, file = "nhanes_phthalates_adults.rds")
 
 
-# This will open a window and plot the scatterplot matrix (may be slow for 19 variables)
-#pairs(dat, pch = 20, cex = 0.5, main = "Scatterplot Matrix: NHANES 2017-18 Phthalates")
 
+# Merge in BMI
+phthalates_adults_bmi <- merge(
+   phthalates_adults,
+   bodymeasures[, c("SEQN", "BMXBMI")],
+   by = "SEQN",
+   all.x = TRUE
+)
 
-#getwd()
+# Optional: Only keep adults with non-missing BMI
+phthalates_adults_bmi <- phthalates_adults_bmi[!is.na(phthalates_adults_bmi$BMXBMI), ]
+
+# Drop SEQN and RIDAGEYR if you want just the analysis vars + BMI
+dat_bmi <- phthalates_adults_bmi[, setdiff(names(phthalates_adults_bmi), c("SEQN", "RIDAGEYR"))]
+
+# Save to RDS
+saveRDS(dat_bmi, file = "nhanes_phthalates_adults_bmi.rds")
+
 

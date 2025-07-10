@@ -28,7 +28,7 @@ pheatmap(
 )
 
 # ---- Pairwise Scatterplot Matrix (Raw Data) ----
-pairs(Y_raw, labels = colnames(Y_raw), main = "Scatterplot Matrix (All Variables)")
+pairs(Y_raw, labels = colnames(Y_raw), main = "Scatterplot Matrix (All Variables)", cex = 0.1)
 
 
 ```
@@ -449,7 +449,7 @@ for (i in 1:N) {
   plot(Y[, p1], Y[, p2],
        xlab = colnames(Y)[p1], ylab = colnames(Y)[p2],
        main = sprintf("Before: %s vs %s", colnames(Y)[p1], colnames(Y)[p2]),
-       pch = 20, col = rgb(0.2, 0.2, 0.7, 0.5))
+       pch = 20, col = rgb(0.2, 0.2, 0.7, 0.5), cex = 0.1)
   
   # After (residual)
   plot(Y_resid_ssl[, p1], Y_resid_ssl[, p2],
@@ -457,7 +457,7 @@ for (i in 1:N) {
        main = sprintf("After: %s vs %s\nResidual cor = %.3f",
                       colnames(Y)[p1], colnames(Y)[p2],
                       cor_resid_ssl[p1, p2]),
-       pch = 20, col = rgb(0.7, 0.2, 0.2, 0.5))
+       pch = 20, col = rgb(0.7, 0.2, 0.2, 0.5), cex = 0.1)
 }
 par(mfrow = c(1, 1))
 
@@ -468,29 +468,29 @@ par(mfrow = c(1, 1))
 # ---- MoM-Trio ----
 Y_resid_trio <- Y - outer(b_trio, lambda_trio)
 par(mfrow = c(1,2))
-pairs(Y, labels = colnames(Y), main = "MoM-Trio: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.7)
-pairs(Y_resid_trio, labels = colnames(Y), main = "MoM-Trio: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.7)
+pairs(Y, labels = colnames(Y), main = "MoM-Trio: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.1)
+pairs(Y_resid_trio, labels = colnames(Y), main = "MoM-Trio: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.1)
 par(mfrow = c(1,1))
 
 # ---- MGSP ----
 Y_resid_mgsp <- Y - outer(b_mgsp, lambda_mgsp)
 par(mfrow = c(1,2))
-pairs(Y, labels = colnames(Y), main = "MGSP: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.7)
-pairs(Y_resid_mgsp, labels = colnames(Y), main = "MGSP: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.7)
+pairs(Y, labels = colnames(Y), main = "MGSP: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.1)
+pairs(Y_resid_mgsp, labels = colnames(Y), main = "MGSP: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.1)
 par(mfrow = c(1,1))
 
 # ---- Horseshoe ----
 Y_resid_hs <- Y - outer(b_hs, lambda_hs)
 par(mfrow = c(1,2))
-pairs(Y, labels = colnames(Y), main = "Horseshoe: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.7)
-pairs(Y_resid_hs, labels = colnames(Y), main = "Horseshoe: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.7)
+pairs(Y, labels = colnames(Y), main = "Horseshoe: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.1)
+pairs(Y_resid_hs, labels = colnames(Y), main = "Horseshoe: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.1)
 par(mfrow = c(1,1))
 
 # ---- Spike-and-Slab ----
 Y_resid_ssl <- Y - outer(b_ssl, lambda_ssl)
 par(mfrow = c(1,2))
-pairs(Y, labels = colnames(Y), main = "Spike-and-Slab: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.7)
-pairs(Y_resid_ssl, labels = colnames(Y), main = "Spike-and-Slab: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.7)
+pairs(Y, labels = colnames(Y), main = "Spike-and-Slab: Before K=1 Removal", pch=20, col=rgb(0.2,0.2,0.7,0.4), cex=0.1)
+pairs(Y_resid_ssl, labels = colnames(Y), main = "Spike-and-Slab: After K=1 Removal", pch=20, col=rgb(0.9,0.1,0.1,0.4), cex=0.1)
 par(mfrow = c(1,1))
 
 ```
@@ -849,7 +849,7 @@ compare_lambda1_bi <- data.frame(
 plot(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$MGSP,
      xlab = "MoM-Trio: lambda1_bi", ylab = "MGSP: lambda1_bi",
      main = "MoM-Trio vs MGSP: lambda1_bi",
-     pch = 20, col = rgb(0.2,0.2,0.7,0.5))
+     pch = 20, col = rgb(0.2,0.2,0.7,0.5), cex = 0.2)
 abline(0,1,col="red",lwd=2)
 grid()
 
@@ -863,7 +863,7 @@ legend("topleft", legend = sprintf("Corr = %.3f", cor_val), bty = "n")
 plot(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$Horseshoe,
      xlab = "MoM-Trio: lambda1_bi", ylab = "Horseshoe: lambda1_bi",
      main = "MoM-Trio vs Horseshoe: lambda1_bi",
-     pch = 20, col = rgb(0.2,0.7,0.2,0.5))
+     pch = 20, col = rgb(0.2,0.7,0.2,0.5), cex = 0.2)
 abline(0,1,col="red",lwd=2)
 grid()
 cor_val <- cor(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$Horseshoe)
@@ -873,14 +873,14 @@ legend("topleft", legend = sprintf("Corr = %.3f", cor_val), bty = "n")
 plot(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$Spike_and_Slab,
      xlab = "MoM-Trio: lambda1_bi", ylab = "Spike-and-Slab: lambda1_bi",
      main = "MoM-Trio vs Spike-and-Slab: lambda1_bi",
-     pch = 20, col = rgb(0.7,0.2,0.2,0.5))
+     pch = 20, col = rgb(0.7,0.2,0.2,0.5), cex = 0.2)
 abline(0,1,col="red",lwd=2)
 grid()
 cor_val <- cor(compare_lambda1_bi$MoM_Trio, compare_lambda1_bi$Spike_and_Slab)
 legend("topleft", legend = sprintf("Corr = %.3f", cor_val), bty = "n")
 
 # You can also look at all pairwise scatterplots at once:
-pairs(compare_lambda1_bi, main = "Pairwise lambda1_bi: All Methods", pch=20, cex=0.7)
+pairs(compare_lambda1_bi, main = "Pairwise lambda1_bi: All Methods", pch=20, cex=0.1)
 
 ```
 
