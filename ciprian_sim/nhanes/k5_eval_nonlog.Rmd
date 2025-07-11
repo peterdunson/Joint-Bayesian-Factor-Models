@@ -1,0 +1,408 @@
+---
+title: "k5_eval_nonlog"
+author: "Peter"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r fig.width=14, fig.height=10, out.width='100%'}
+# --- SETUP ---
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
+dat <- readRDS("nhanes_phthalates_adults.rds")
+dat <- log1p(dat)
+Y <- scale(dat, center = TRUE, scale = TRUE)
+P <- ncol(Y)
+n <- nrow(Y)
+cor_raw <- cor(Y)
+
+fit_dir <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/method_development"
+
+# --- Load MGSP ---
+#fit_mgsp <- readRDS(file.path(fit_dir, "fit_Joint_NHANES1718_k5_log.rds"))
+Lambda_mgsp <- as.matrix(fit_mgsp$Lambda_hat)
+K_mgsp <- ncol(Lambda_mgsp)
+# Permanently normalize each column to unit norm (for ALL downstream use)
+for (j in 1:K_mgsp) Lambda_mgsp[, j] <- Lambda_mgsp[, j] / sqrt(sum(Lambda_mgsp[, j]^2))
+colnames(Lambda_mgsp) <- paste0("Factor", 1:K_mgsp)
+
+B_hat_mgsp <- Y %*% Lambda_mgsp
+Y_hat_mgsp <- B_hat_mgsp %*% t(Lambda_mgsp)
+resid_mgsp <- Y - Y_hat_mgsp
+model_cor_mgsp <- Lambda_mgsp %*% t(Lambda_mgsp)
+
+# --- Load SSL ---
+#fit_ssl <- readRDS(file.path(fit_dir, "fit_SSL_NHANES1718_k5_log.rds"))
+Lambda_ssl <- as.matrix(fit_ssl$Lambda_hat)
+K_ssl <- ncol(Lambda_ssl)
+# Permanently normalize each column to unit norm (for ALL downstream use)
+for (j in 1:K_ssl) Lambda_ssl[, j] <- Lambda_ssl[, j] / sqrt(sum(Lambda_ssl[, j]^2))
+colnames(Lambda_ssl) <- paste0("Factor", 1:K_ssl)
+
+B_hat_ssl <- Y %*% Lambda_ssl
+Y_hat_ssl <- B_hat_ssl %*% t(Lambda_ssl)
+resid_ssl <- Y - Y_hat_ssl
+model_cor_ssl <- Lambda_ssl %*% t(Lambda_ssl)
+
+# Add these lines after computing B_hat_mgsp and B_hat_ssl
+Y_resid_mgsp <- Y - B_hat_mgsp %*% t(Lambda_mgsp)
+Y_resid_ssl  <- Y - B_hat_ssl  %*% t(Lambda_ssl)
+
+
+# ---- 1. Plot squared loadings for each factor, side by side ----
+par(mfrow = c(2, max(K_mgsp, K_ssl)), mar = c(8,4,3,1))
+for (j in 1:K_mgsp) {
+  barplot(Lambda_mgsp[,j]^2, names.arg = colnames(Y), las = 2,
+          col = "orchid", main = paste0("MGSP F", j, "\nSquared Loadings"), cex.names = 0.7)
+  abline(h = 0, col = "gray60")
+}
+for (j in 1:K_ssl) {
+  barplot(Lambda_ssl[,j]^2, names.arg = colnames(Y), las = 2,
+          col = "skyblue", main = paste0("SSL F", j, "\nSquared Loadings"), cex.names = 0.7)
+  abline(h = 0, col = "gray60")
+}
+par(mfrow = c(1,1))
+
+# ---- 2. Model-implied vs empirical correlation, side by side ----
+par(mfrow = c(1, 2))
+plot(as.vector(model_cor_mgsp), as.vector(cor_raw),
+     xlab = "Model-implied", ylab = "Empirical",
+     main = paste0("MGSP: Outer vs Empirical (corr = ",
+                   round(cor(as.vector(model_cor_mgsp), as.vector(cor_raw)), 3), ")"),
+     pch = 20, col = rgb(0.6,0.2,0.6,0.5))
+abline(0,1,col="red",lwd=2)
+plot(as.vector(model_cor_ssl), as.vector(cor_raw),
+     xlab = "Model-implied", ylab = "Empirical",
+     main = paste0("SSL: Outer vs Empirical (corr = ",
+                   round(cor(as.vector(model_cor_ssl), as.vector(cor_raw)), 3), ")"),
+     pch = 20, col = rgb(0.2,0.5,0.8,0.5))
+abline(0,1,col="red",lwd=2)
+par(mfrow = c(1,1))
+
+# ---- 3. QQ-plots of residuals, side by side ----
+par(mfrow = c(1, 2))
+qqnorm(as.vector(resid_mgsp), main = "MGSP QQ Residuals")
+qqline(as.vector(resid_mgsp), col = "red", lwd = 2)
+qqnorm(as.vector(resid_ssl), main = "SSL QQ Residuals")
+qqline(as.vector(resid_ssl), col = "red", lwd = 2)
+par(mfrow = c(1,1))
+
+# ---- 5. Correlation matrices before and after fit, side by side, blue-white-red palette ----
+library(pheatmap)
+library(gridExtra)
+
+my_palette <- colorRampPalette(c("blue", "white", "red"))(100)
+my_breaks <- seq(-1, 1, length.out = 101)
+
+cor_before <- cor(Y)
+cor_after_mgsp <- cor(resid_mgsp)
+cor_after_ssl  <- cor(resid_ssl)
+
+ph_before <- pheatmap(
+  cor_before, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = my_palette, breaks = my_breaks,
+  main = "Empirical Correlation",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = colnames(Y), labels_col = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9,
+  silent = TRUE
+)
+ph_after_mgsp <- pheatmap(
+  cor_after_mgsp, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = my_palette, breaks = my_breaks,
+  main = "MGSP Residual Correlation",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = colnames(Y), labels_col = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9,
+  silent = TRUE
+)
+ph_after_ssl <- pheatmap(
+  cor_after_ssl, cluster_rows = FALSE, cluster_cols = FALSE,
+  color = my_palette, breaks = my_breaks,
+  main = "SSL Residual Correlation",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = colnames(Y), labels_col = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9,
+  silent = TRUE
+)
+
+grid.arrange(ph_before$gtable, ph_after_mgsp$gtable, ncol = 2, top = "Empirical vs. MGSP Residual Correlation")
+grid.arrange(ph_before$gtable, ph_after_ssl$gtable, ncol = 2, top = "Empirical vs. SSL Residual Correlation")
+
+
+
+
+
+
+
+
+
+
+# ---- 6. Heatmaps of squared normalized loadings (showing variable names) ----
+
+Lambda_mgsp_sq <- Lambda_mgsp^2
+Lambda_ssl_sq  <- Lambda_ssl^2
+
+mgsp_varnames <- if (!is.null(rownames(Lambda_mgsp))) rownames(Lambda_mgsp) else colnames(Y)
+ssl_varnames  <- if (!is.null(rownames(Lambda_ssl))) rownames(Lambda_ssl) else colnames(Y)
+
+my_palette_sq <- colorRampPalette(c("white", "pink", "red"))(100)
+
+# MGSP squared loadings heatmap
+pheatmap(
+  Lambda_mgsp_sq,
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  color = my_palette_sq,
+  main = "MGSP Squared Normalized Factor Loadings",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = mgsp_varnames,
+  labels_col = colnames(Lambda_mgsp),
+  fontsize_row = 9, fontsize_col = 12
+)
+
+# SSL squared loadings heatmap
+pheatmap(
+  Lambda_ssl_sq,
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  color = my_palette_sq,
+  main = "SSL Squared Normalized Factor Loadings",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = ssl_varnames,
+  labels_col = colnames(Lambda_ssl),
+  fontsize_row = 9, fontsize_col = 12
+)
+
+
+
+
+
+
+# ---- 7. Heatmaps of normalized (non-squared) loadings (showing variable names) ----
+
+mgsp_varnames <- if (!is.null(rownames(Lambda_mgsp))) rownames(Lambda_mgsp) else colnames(Y)
+ssl_varnames  <- if (!is.null(rownames(Lambda_ssl))) rownames(Lambda_ssl) else colnames(Y)
+
+# For nice centering of 0 at white, set breaks to symmetric range
+absmax_load <- max(abs(c(Lambda_mgsp, Lambda_ssl)))
+my_palette_load <- colorRampPalette(c("blue", "white", "red"))(100)
+my_breaks_load <- seq(-absmax_load, absmax_load, length.out = 101)
+
+# MGSP normalized loadings heatmap
+pheatmap(
+  Lambda_mgsp,
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  color = my_palette_load,
+  breaks = my_breaks_load,
+  main = "MGSP Normalized Factor Loadings",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = mgsp_varnames,
+  labels_col = colnames(Lambda_mgsp),
+  fontsize_row = 9, fontsize_col = 12
+)
+
+# SSL normalized loadings heatmap
+pheatmap(
+  Lambda_ssl,
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  color = my_palette_load,
+  breaks = my_breaks_load,
+  main = "SSL Normalized Factor Loadings",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = ssl_varnames,
+  labels_col = colnames(Lambda_ssl),
+  fontsize_row = 9, fontsize_col = 12
+)
+
+
+
+
+# ---- Product of lambdas vs empirical correlation, for each factor ----
+par(mfrow = c(2, max(K_mgsp, K_ssl)))
+for (k in 1:K_mgsp) {
+  lambda_k <- Lambda_mgsp[, k]
+  prod_k <- outer(lambda_k, lambda_k)
+  plot(
+    as.vector(prod_k), as.vector(cor_raw),
+    xlab = bquote(lambda[.(k)]["p"]*lambda[.(k)]["r"]),
+    ylab = "Empirical correlation C[pr]",
+    main = paste0("MGSP: F", k, " (λpλr vs C_pr)"),
+    pch = 20, col = rgb(0.6,0.2,0.6,0.4), cex = 0.5
+  )
+  abline(0,1,col="red",lwd=2)
+}
+for (k in 1:K_ssl) {
+  lambda_k <- Lambda_ssl[, k]
+  prod_k <- outer(lambda_k, lambda_k)
+  plot(
+    as.vector(prod_k), as.vector(cor_raw),
+    xlab = bquote(lambda[.(k)]["p"]*lambda[.(k)]["r"]),
+    ylab = "Empirical correlation C[pr]",
+    main = paste0("SSL: F", k, " (λpλr vs C_pr)"),
+    pch = 20, col = rgb(0.2,0.5,0.8,0.4), cex = 0.5
+  )
+  abline(0,1,col="red",lwd=2)
+}
+par(mfrow = c(1,1))
+
+
+
+```
+
+
+
+
+
+```{r fig.width=14, fig.height=10, out.width='100%'}
+# ----------------------- DIAGNOSTICS FOR MGSP & SSL -----------------------
+
+# Helper to get off-diagonal elements
+get_upper <- function(mat) mat[upper.tri(mat)]
+
+# Set up permutation null for correlation comparison
+set.seed(12)
+Y_perm <- apply(Y, 2, sample)
+cor_null <- cor(Y_perm)
+offdiag_null <- get_upper(cor_null)
+offdiag_before <- get_upper(cor(Y))
+
+# Function for diagnostics per method
+plot_diagnostics <- function(Y, Lambda, B_hat, Y_resid, method_name, fit=NULL) {
+  K <- ncol(Lambda)
+  P <- ncol(Y)
+  
+  # 1. Pairwise scatterplots before/after
+  par(mfrow = c(1,2))
+  pairs(Y, labels = colnames(Y), main = paste(method_name, "Before (All Vars)"), cex = 0.1)
+  pairs(Y_resid, labels = colnames(Y), main = paste(method_name, "After (Residuals)"), cex = 0.1)
+  par(mfrow = c(1,1))
+  
+  # 2. Histograms of off-diagonal correlations before/after
+  offdiag_after <- get_upper(cor(Y_resid))
+  par(mfrow=c(1,2))
+  hist(offdiag_before, breaks=30, col="dodgerblue", border="white", xlim=c(-1,1),
+       main=paste(method_name, "Before: Correlation Dist."), xlab="Correlation", freq=FALSE)
+  lines(density(offdiag_null), lwd=2, lty=2, col="black")
+  legend("topright", legend=c("Observed", "Permutation Null"), col=c("dodgerblue", "black"),
+         lwd=2, lty=c(1,2), bty="n", cex=0.9)
+  hist(offdiag_after, breaks=30, col="firebrick", border="white", xlim=c(-1,1),
+       main=paste(method_name, "After: Correlation Dist."), xlab="Correlation", freq=FALSE)
+  lines(density(offdiag_null), lwd=2, lty=2, col="black")
+  legend("topright", legend=c("Observed", "Permutation Null"), col=c("firebrick", "black"),
+         lwd=2, lty=c(1,2), bty="n", cex=0.9)
+  par(mfrow=c(1,1))
+  
+
+  # 4. Lambda_p * b_i scores for all factors (first variable)
+  for (j in 1:K) {
+    lambda_bi <- Lambda[,j][1] * B_hat[,j]
+    hist(lambda_bi, breaks=30, main=paste(method_name, "F", j, "lambda", j, "_bi"), col="skyblue", xlab="lambda1 * b")
+  }
+  
+  if (!is.null(fit$posterior)) {
+  lambda_samples <- fit$posterior$Lambda
+  eta_samples <- fit$posterior$eta
+  for (j in 1:K) {
+    lambda2_samples <- lambda_samples[,,j]^2
+    # Compute 2.5%, 50%, 97.5% quantiles and mean for each variable
+    lambda2_ci <- t(apply(lambda2_samples, 2, function(x) c(quantile(x, probs=c(0.025, 0.5, 0.975)), mean=mean(x))))
+    colnames(lambda2_ci) <- c("lower", "median", "upper", "mean")
+    rownames(lambda2_ci) <- colnames(Y)
+    print(paste(method_name, "Factor", j, "λ² 95% CIs + Mean:"))
+    print(round(lambda2_ci, 4))
+    # Plot lower, median, upper, and mean
+    matplot(1:P, lambda2_ci[,c("lower", "median", "upper", "mean")], type="l",
+            lty=c(2,1,2,3), col=c("gray50","red","gray50","blue"),
+            main=paste(method_name, "F", j, "λ² (95% CI + Mean)"),
+            xaxt="n", xlab="Variable", ylab=expression(lambda^2))
+    axis(1, at=1:P, labels=colnames(Y), las=2, cex.axis=0.7)
+    legend("topright", legend=c("Lower", "Median", "Upper", "Mean"),
+           lty=c(2,1,2,3), col=c("gray50","red","gray50","blue"), bty="n")
+  }
+  b_samples <- eta_samples[,,1]
+  b_ci <- t(apply(b_samples, 2, quantile, probs=c(0.025, 0.5, 0.975)))
+  colnames(b_ci) <- c("lower", "median", "upper")
+  print(paste(method_name, "F1 b_i 95% CI (first 5):"))
+  print(round(b_ci[1:5,], 4))
+
+  }
+}
+
+# ----------- Run diagnostics for MGSP -----------
+plot_diagnostics(Y, Lambda_mgsp, B_hat_mgsp, Y_resid_mgsp, "MGSP", fit_mgsp)
+
+# ----------- Run diagnostics for SSL -----------
+plot_diagnostics(Y, Lambda_ssl, B_hat_ssl, Y_resid_ssl, "SSL", fit_ssl)
+
+
+```
+
+
+```{r fig.width=14, fig.height=10, out.width='100%'}
+library(pheatmap)
+
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
+dat <- readRDS("nhanes_phthalates_adults.rds")
+dat <- log1p(dat)
+Y <- scale(dat, center = TRUE, scale = TRUE)
+P <- ncol(Y)
+n <- nrow(Y)
+cor_raw <- cor(Y)
+
+# ---- 8. Precision (Inverse Correlation) Matrices with Variable Names ----
+
+# Helper function: safely invert (for numerical stability)
+inv <- function(mat) {
+  # Add tiny jitter if needed for invertibility
+  mat <- as.matrix(mat)
+  diag(mat) <- diag(mat)
+  solve(mat)
+}
+
+# Compute precision matrices
+prec_before      <- inv(cor(Y))            # Before model
+prec_after_mgsp  <- inv(cor(resid_mgsp))   # After MGSP
+prec_after_ssl   <- inv(cor(resid_ssl))    # After SSL
+
+# Make sure row/col names are set
+varnames <- colnames(Y)
+rownames(prec_before) <- colnames(prec_before) <- varnames
+rownames(prec_after_mgsp) <- colnames(prec_after_mgsp) <- varnames
+rownames(prec_after_ssl) <- colnames(prec_after_ssl) <- varnames
+
+# Choose a nice palette with centered white (for 0)
+my_palette_prec <- colorRampPalette(c("blue", "white", "red"))(100)
+my_breaks_prec <- seq(-max(abs(c(prec_before, prec_after_mgsp, prec_after_ssl))),
+                      max(abs(c(prec_before, prec_after_mgsp, prec_after_ssl))),
+                      length.out = 101)
+
+# Plot for Empirical (before), MGSP (after), SSL (after)
+pheatmap(
+  prec_before,
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  color = my_palette_prec, breaks = my_breaks_prec,
+  main = "Precision Matrix (Before Model)",
+  show_rownames = TRUE, show_colnames = TRUE,
+  fontsize_row = 9, fontsize_col = 9
+)
+
+pheatmap(
+  prec_after_mgsp,
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  color = my_palette_prec, breaks = my_breaks_prec,
+  main = "Precision Matrix (MGSP Residuals)",
+  show_rownames = TRUE, show_colnames = TRUE,
+  fontsize_row = 9, fontsize_col = 9
+)
+
+pheatmap(
+  prec_after_ssl,
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  color = my_palette_prec, breaks = my_breaks_prec,
+  main = "Precision Matrix (SSL Residuals)",
+  show_rownames = TRUE, show_colnames = TRUE,
+  fontsize_row = 9, fontsize_col = 9
+)
+
+```
+
+
+
