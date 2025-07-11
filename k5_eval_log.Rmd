@@ -1,0 +1,285 @@
+---
+title: "k5_eval_log"
+output:
+  html_document:
+    code_folding: hide
+---
+
+
+```{r}
+#load fits
+
+# --- SETUP ---
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
+dat <- readRDS("nhanes_phthalates_adults.rds")
+dat <- log1p(dat)
+Y <- scale(dat, center = TRUE, scale = TRUE)
+P <- ncol(Y)
+n <- nrow(Y)
+
+library(pheatmap)
+library(gridExtra)
+
+# ---- Plot correlation matrix and scatterplot matrix (raw) ----
+cor_raw <- cor(Y)
+pheatmap(
+  cor_raw,
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  color = colorRampPalette(c("white", "pink", "red"))(100),
+  main = "Correlation Matrix (All Variables)",
+  show_rownames = TRUE, show_colnames = TRUE,
+  labels_row = colnames(Y), labels_col = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9
+)
+
+pairs(Y, labels = colnames(Y), main = "Scatterplot Matrix (All Variables)", cex = 0.1)
+
+# --- File locations ---
+fit_dir <- "/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/method_development"
+fit_files <- list(
+  MGSP = "fit_Joint_NHANES1718_k5_log.rds",
+  SSL  = "fit_SSL_NHANES1718_k5_log.rds"
+)
+
+for (meth in names(fit_files)) {
+  cat("\n===================", meth, "====================\n")
+  fit <- readRDS(file.path(fit_dir, fit_files[[meth]]))
+  Lambda_hat <- as.matrix(fit$Lambda_hat)   # [P x K]
+  K <- ncol(Lambda_hat)
+  # L2 normalize each factor's loading vector
+  for (j in 1:K) Lambda_hat[, j] <- Lambda_hat[, j] / sqrt(sum(Lambda_hat[, j]^2))
+  colnames(Lambda_hat) <- paste0("Factor", 1:K)
+
+  # --- 1. Plot squared loadings for each factor ---
+  par(mfrow = c(1, K), mar = c(8,4,3,1))
+  for (j in 1:K) {
+    barplot(Lambda_hat[,j]^2, names.arg = colnames(Y), las = 2,
+            col = "orchid", main = paste0(meth, " F", j, "\nSquared Loadings"), cex.names = 0.7)
+    abline(h = 0, col = "gray60")
+  }
+  par(mfrow = c(1,1))
+
+  # --- 2. Factor scores ---
+  B_hat <- Y %*% Lambda_hat  # [n x K]
+
+  # --- 3. Model-implied vs empirical correlation ---
+  model_cor <- Lambda_hat %*% t(Lambda_hat)
+  plot(as.vector(model_cor), as.vector(cor_raw),
+       xlab = "Model-implied correlation", ylab = "Empirical correlation",
+       main = paste0(meth, ": Lambda Outer vs Cor (K=", K, ", Corr = ", round(cor(as.vector(model_cor), as.vector(cor_raw)), 3), ")"),
+       pch = 20, col = rgb(0.2,0.5,0.8,0.5))
+  abline(0,1,col="red",lwd=2)
+
+  # --- 4. Residuals, linear predictors ---
+  Y_hat <- B_hat %*% t(Lambda_hat) # [n x P]
+  resid <- Y - Y_hat
+  linear_pred <- Y_hat
+
+  # --- 5. QQ-plots, Shapiro-Wilk p-values ---
+  par(mfrow = c(1, 2))
+  qqnorm(as.vector(resid), main = paste(meth, "QQ Res"))
+  qqline(as.vector(resid), col = "red", lwd = 2)
+  qqnorm(as.vector(linear_pred), main = paste(meth, "QQ LP"))
+  qqline(as.vector(linear_pred), col = "red", lwd = 2)
+  par(mfrow = c(1, 1))
+
+  # --- 6. Shapiro-Wilk tests (random subsample if too big) ---
+  set.seed(1)
+  sw_resid <- shapiro.test(sample(as.vector(resid), min(5000, length(as.vector(resid)))))
+  cat("Shapiro-Wilk p (residuals):", round(sw_resid$p.value, 4), "\n")
+  sw_linpred <- shapiro.test(sample(as.vector(linear_pred), min(5000, length(as.vector(linear_pred)))))
+  cat("Shapiro-Wilk p (linear predictors):", round(sw_linpred$p.value, 4), "\n")
+}
+
+
+```
+
+
+
+
+
+```{r}
+# --- Diagnostics for each method (add this BELOW previous code block) ---
+
+# If you have posterior samples for Lambda/eta: set this to TRUE
+has_posterior <- !is.null(fit$posterior)
+
+for (meth in names(fit_files)) {
+  cat("\n==========", meth, "full diagnostics ==========\n")
+  fit <- readRDS(file.path(fit_dir, fit_files[[meth]]))
+  Lambda_hat <- as.matrix(fit$Lambda_hat)
+  K <- ncol(Lambda_hat)
+  for (j in 1:K) Lambda_hat[, j] <- Lambda_hat[, j] / sqrt(sum(Lambda_hat[, j]^2))
+  colnames(Lambda_hat) <- paste0("Factor", 1:K)
+  B_hat <- Y %*% Lambda_hat
+  
+  # 1. Pairwise scatterplots before and after (use cex for small dots!)
+  par(mfrow = c(1,2))
+  pairs(Y, labels = colnames(Y), main = paste(meth, "Before (All vars)"), cex = 0.1)
+  Y_hat <- B_hat %*% t(Lambda_hat)
+  Y_resid <- Y - Y_hat
+  pairs(Y_resid, labels = colnames(Y), main = paste(meth, "After (Residuals)"), cex = 0.1)
+  par(mfrow = c(1,1))
+  
+  # 2. Correlation matrix heatmaps before and after
+  cor_before <- cor(Y)
+  cor_after <- cor(Y_resid)
+  library(pheatmap)
+  pheatmap(cor_before, main = paste(meth, "Corr Matrix Before"), fontsize_row=9, fontsize_col=9)
+  pheatmap(cor_after,  main = paste(meth, "Corr Matrix After"),  fontsize_row=9, fontsize_col=9)
+  
+  # 3. Histogram of off-diagonal correlations before/after with permutation null
+  get_upper <- function(mat) mat[upper.tri(mat)]
+  set.seed(12)
+  Y_perm <- apply(Y, 2, sample)
+  cor_null <- cor(Y_perm)
+  offdiag_null <- get_upper(cor_null)
+  offdiag_before <- get_upper(cor_before)
+  offdiag_after <- get_upper(cor_after)
+  plot_hist_with_null <- function(x, null, main, col="dodgerblue") {
+    hist(x, breaks=30, col=col, border="white", xlim=c(-1,1), main=main, xlab="Correlation", freq=FALSE)
+    lines(density(null), lwd=2, lty=2, col="black")
+    legend("topright", legend=c("Observed", "Permutation Null"), col=c(col, "black"), lwd=2, lty=c(1,2), bty="n", cex=0.9)
+  }
+  par(mfrow=c(1,2))
+  plot_hist_with_null(offdiag_before, offdiag_null, paste(meth, "Before"), col="dodgerblue")
+  plot_hist_with_null(offdiag_after, offdiag_null,  paste(meth, "After"),  col="firebrick")
+  par(mfrow=c(1,1))
+
+  # 4. Squared loadings λ² for each factor
+  par(mfrow = c(1, K))
+  for (j in 1:K) {
+    barplot(Lambda_hat[,j]^2, names.arg = colnames(Y), las = 2,
+            col = "orchid", main = paste0(meth, " F", j, "\nSquared Loadings"), cex.names = 0.7)
+    abline(h = 0, col = "gray60")
+  }
+  par(mfrow = c(1,1))
+
+  # 5. Lambda_p * b_i scores for all factors
+  for (j in 1:K) {
+    lambda_bi <- Lambda_hat[,j][1] * B_hat[,j]   # first variable's loading times score
+    hist(lambda_bi, breaks=30, main=paste(meth, "F", j, "lambda1_bi"), col="skyblue", xlab="lambda1 * b")
+  }
+
+  # 6. 95% Credible Intervals for lambda² and b if posterior available
+  if (!is.null(fit$posterior)) {
+    lambda_samples <- fit$posterior$Lambda   # [iter x P x K]
+    eta_samples <- fit$posterior$eta         # [iter x n x K]
+    for (j in 1:K) {
+      # λ² CIs
+      lambda2_samples <- lambda_samples[,,j]^2
+      lambda2_ci <- t(apply(lambda2_samples, 2, quantile, probs=c(0.025, 0.5, 0.975)))
+      colnames(lambda2_ci) <- c("lower", "median", "upper")
+      rownames(lambda2_ci) <- colnames(Y)
+      print(paste(meth, "Factor", j, "λ² 95% CIs:"))
+      print(round(lambda2_ci, 4))
+      # Plot λ² CIs
+      matplot(1:P, lambda2_ci, type="l", lty=c(2,1,2), col=c("gray50","red","gray50"),
+              main=paste(meth, "F", j, "λ² (95% CI)"), xaxt="n", xlab="Variable", ylab=expression(lambda^2))
+      axis(1, at=1:P, labels=colnames(Y), las=2, cex.axis=0.7)
+      legend("topright", legend=c("Lower", "Median", "Upper"), lty=c(2,1,2), col=c("gray50","red","gray50"), bty="n")
+    }
+    # b_i CIs (first 5 subjects, first factor)
+    b_samples <- eta_samples[,,1]
+    b_ci <- t(apply(b_samples, 2, quantile, probs=c(0.025, 0.5, 0.975)))
+    colnames(b_ci) <- c("lower", "median", "upper")
+    print(paste(meth, "F1 b_i 95% CI (first 5):"))
+    print(round(b_ci[1:5,], 4))
+  }
+}
+
+```
+
+
+
+```{r}
+# --- Diagnostics block for all factors and both models ---
+
+library(pheatmap)
+
+models <- list(
+  MGSP = readRDS("fit_Joint_NHANES1718_k5_log.rds"),
+  SSL  = readRDS("fit_SSL_NHANES1718_k5_log.rds")
+)
+
+for (meth in names(models)) {
+  fit <- models[[meth]]
+  Lambda_hat <- as.matrix(fit$Lambda_hat)        # P x K
+  K <- ncol(Lambda_hat)
+  P <- nrow(Lambda_hat)
+  for (j in 1:K) Lambda_hat[,j] <- Lambda_hat[,j] / sqrt(sum(Lambda_hat[,j]^2))
+  colnames(Lambda_hat) <- paste0("Factor", 1:K)
+  rownames(Lambda_hat) <- colnames(Y)
+  B_hat <- Y %*% Lambda_hat                   # n x K
+
+  # 1. Pairwise scatterplots before and after
+  par(mfrow = c(1, 2))
+  pairs(Y, labels = colnames(Y), main = paste(meth, "Before (All vars)"), cex = 0.1)
+  Y_hat <- B_hat %*% t(Lambda_hat)            # n x P
+  Y_resid <- Y - Y_hat
+  pairs(Y_resid, labels = colnames(Y), main = paste(meth, "After (Residuals)"), cex = 0.1)
+  par(mfrow = c(1, 1))
+
+  # 2. Correlation matrices (heatmaps)
+  cor_before <- cor(Y)
+  cor_after <- cor(Y_resid)
+  pheatmap(cor_before, main = paste(meth, "Corr Matrix Before"), fontsize_row=9, fontsize_col=9)
+  pheatmap(cor_after,  main = paste(meth, "Corr Matrix After"),  fontsize_row=9, fontsize_col=9)
+
+  # 3. Histogram of off-diagonal correlations before/after + permutation null
+  get_upper <- function(mat) mat[upper.tri(mat)]
+  set.seed(12)
+  Y_perm <- apply(Y, 2, sample)
+  cor_null <- cor(Y_perm)
+  offdiag_null <- get_upper(cor_null)
+  offdiag_before <- get_upper(cor_before)
+  offdiag_after <- get_upper(cor_after)
+  plot_hist_with_null <- function(x, null, main, col="dodgerblue") {
+    hist(x, breaks=30, col=col, border="white", xlim=c(-1,1), main=main, xlab="Correlation", freq=FALSE)
+    lines(density(null), lwd=2, lty=2, col="black")
+    legend("topright", legend=c("Observed", "Permutation Null"), col=c(col, "black"), lwd=2, lty=c(1,2), bty="n", cex=0.9)
+  }
+  par(mfrow=c(1,2))
+  plot_hist_with_null(offdiag_before, offdiag_null, paste(meth, "Before"), col="dodgerblue")
+  plot_hist_with_null(offdiag_after, offdiag_null,  paste(meth, "After"),  col="firebrick")
+  par(mfrow=c(1,1))
+
+  # 4. Squared loadings λ² for each factor + 95% CI if posterior
+  if (!is.null(fit$posterior)) {
+    lambda_samples <- fit$posterior$Lambda   # [iter x P x K]
+    for (k in 1:K) {
+      lambda2_samples <- lambda_samples[,,k]^2
+      lambda2_ci <- t(apply(lambda2_samples, 2, quantile, probs=c(0.025, 0.5, 0.975)))
+      colnames(lambda2_ci) <- c("lower", "median", "upper")
+      rownames(lambda2_ci) <- colnames(Y)
+      # Plot λ² and CIs
+      matplot(1:P, lambda2_ci, type="l", lty=c(2,1,2), col=c("gray50","red","gray50"),
+              main=paste(meth, "F", k, "λ² (95% CI)"), xaxt="n", xlab="Variable", ylab=expression(lambda^2))
+      axis(1, at=1:P, labels=colnames(Y), las=2, cex.axis=0.7)
+      legend("topright", legend=c("Lower", "Median", "Upper"), lty=c(2,1,2), col=c("gray50","red","gray50"), bty="n")
+    }
+  } else {
+    # Just plot λ² barplots for each factor
+    par(mfrow = c(1, K))
+    for (k in 1:K) {
+      barplot(Lambda_hat[,k]^2, names.arg = colnames(Y), las = 2,
+              col = "orchid", main = paste0(meth, " F", k, "\nSquared Loadings"), cex.names = 0.7)
+      abline(h = 0, col = "gray60")
+    }
+    par(mfrow = c(1,1))
+  }
+
+  # 5. Lambda_p * b_i for all p and i and all factors (hist for each)
+  for (k in 1:K) {
+    for (p in 1:P) {
+      lambda_bi <- Lambda_hat[p, k] * B_hat[, k]
+      hist(lambda_bi, breaks=30, main=paste(meth, ": F", k, ", lambda", p, "_bi"),
+           col="skyblue", xlab=paste("lambda", p, "* b_i"))
+    }
+  }
+}
+
+```
+
+
+
