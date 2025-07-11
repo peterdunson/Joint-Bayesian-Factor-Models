@@ -1029,3 +1029,104 @@ par(mfrow = c(1, 1))
 
 
 
+
+```{r}
+# --- Precision Matrix (Inverse Correlation) Visualization for All Methods ---
+
+library(pheatmap)
+
+# Utility for robust color scaling (clip at 99th percentile of absolute values)
+get_prec_scale <- function(..., quant = 0.99) {
+  vals <- c(...)
+  maxval <- quantile(abs(vals), quant, na.rm = TRUE)
+  c(-maxval, maxval)
+}
+
+# Compute all relevant residuals
+resid_trio <- Y - outer(b_trio, lambda_trio)
+resid_mgsp <- Y - outer(b_mgsp, lambda_mgsp)
+resid_hs   <- Y - outer(b_hs, lambda_hs)
+resid_ssl  <- Y - outer(b_ssl, lambda_ssl)
+
+# Calculate correlation and precision matrices
+cor_before     <- cor(Y)
+cor_trio       <- cor(resid_trio)
+cor_mgsp       <- cor(resid_mgsp)
+cor_hs         <- cor(resid_hs)
+cor_ssl        <- cor(resid_ssl)
+
+prec_before    <- tryCatch(solve(cor_before), error = function(e) MASS::ginv(cor_before))
+prec_trio      <- tryCatch(solve(cor_trio),   error = function(e) MASS::ginv(cor_trio))
+prec_mgsp      <- tryCatch(solve(cor_mgsp),   error = function(e) MASS::ginv(cor_mgsp))
+prec_hs        <- tryCatch(solve(cor_hs),     error = function(e) MASS::ginv(cor_hs))
+prec_ssl       <- tryCatch(solve(cor_ssl),    error = function(e) MASS::ginv(cor_ssl))
+
+# Get a reasonable shared scale for colorbars
+scale_lim <- get_prec_scale(prec_before, prec_trio, prec_mgsp, prec_hs, prec_ssl)
+
+# Nice palette for - to + values
+prec_palette <- colorRampPalette(c("blue", "white", "red"))(100)
+
+# --- Plot with variable names ---
+pheatmap(
+  prec_before,
+  color        = prec_palette,
+  breaks       = seq(scale_lim[1], scale_lim[2], length.out = 101),
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  main         = "Precision Matrix: Original Data",
+  show_rownames= TRUE, show_colnames= TRUE,
+  labels_row   = colnames(Y),
+  labels_col   = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9
+)
+pheatmap(
+  prec_trio,
+  color        = prec_palette,
+  breaks       = seq(scale_lim[1], scale_lim[2], length.out = 101),
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  main         = "Precision Matrix: MoM-Trio Residuals",
+  show_rownames= TRUE, show_colnames= TRUE,
+  labels_row   = colnames(Y),
+  labels_col   = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9
+)
+pheatmap(
+  prec_mgsp,
+  color        = prec_palette,
+  breaks       = seq(scale_lim[1], scale_lim[2], length.out = 101),
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  main         = "Precision Matrix: MGSP Residuals",
+  show_rownames= TRUE, show_colnames= TRUE,
+  labels_row   = colnames(Y),
+  labels_col   = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9
+)
+pheatmap(
+  prec_hs,
+  color        = prec_palette,
+  breaks       = seq(scale_lim[1], scale_lim[2], length.out = 101),
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  main         = "Precision Matrix: Horseshoe Residuals",
+  show_rownames= TRUE, show_colnames= TRUE,
+  labels_row   = colnames(Y),
+  labels_col   = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9
+)
+pheatmap(
+  prec_ssl,
+  color        = prec_palette,
+  breaks       = seq(scale_lim[1], scale_lim[2], length.out = 101),
+  cluster_rows = FALSE, cluster_cols = FALSE,
+  main         = "Precision Matrix: Spike-and-Slab Residuals",
+  show_rownames= TRUE, show_colnames= TRUE,
+  labels_row   = colnames(Y),
+  labels_col   = colnames(Y),
+  fontsize_row = 9, fontsize_col = 9
+)
+
+```
+
+
+
+
+
