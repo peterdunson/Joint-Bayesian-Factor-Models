@@ -2,7 +2,7 @@
 
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
 dat <- readRDS("nhanes_phthalates_adults.rds")
-dat <- log1p(dat)
+#dat <- log1p(dat)
 
 Y <- scale(dat, center = TRUE, scale = TRUE)
 n <- nrow(Y)
@@ -46,7 +46,7 @@ saveRDS(
     posterior  = post_j,
     Lambda_hat = Lambda_j_hat
   ),
-  file = "fit_Joint_NHANES1718_k5_log.rds"
+  file = "fit_Joint_NHANES1718_k5_nonlog.rds"
 )
 
 

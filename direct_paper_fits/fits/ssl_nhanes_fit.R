@@ -7,7 +7,7 @@ options(mc.cores = parallel::detectCores())
 # ---- DATA: Prepare & scale ----
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/nhanes")
 dat <- readRDS("nhanes_phthalates_adults.rds")
-dat <- log1p(dat)
+#dat <- log1p(dat)
 Y <- scale(dat, center = TRUE, scale = TRUE)
 n <- nrow(Y)
 p <- ncol(Y)
@@ -16,7 +16,7 @@ K <- 5
 # ---- MODEL ----
 setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/continuous_spike_slab")
 mod <- stan_model("spike_slab_factor_model.stan")
-setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/direct_paper_fits/storing_fit/spike_slab")
+setwd("/Users/peterdunson/Desktop/Joint-Bayesian-Factor-Models/ciprian_sim/method_development")
 
 # ---- HYPERPARAMETERS ----
 lambda0 <- 20     # spike (strong shrinkage)
@@ -58,7 +58,7 @@ saveRDS(
       posterior  = post_j,
       Lambda_hat = Lambda_j_hat
    ),
-   file = "fit_SSL_NHANES1718_k5_log.rds"
+   file = "fit_SSL_NHANES1718_k5_nonlog.rds"
 )
 
 sum_j      <- summary(fit_j)$summary

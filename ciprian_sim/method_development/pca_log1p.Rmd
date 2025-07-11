@@ -1,8 +1,8 @@
 ---
 title: "pca_log1p"
-author: "Peter"
-date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document:
+    code_folding: hide
 ---
 
 #Can you do a PCA on the log transformed NHANES data and check the proportion of variance explained?
@@ -79,5 +79,22 @@ par(mfrow = c(1, 1))
 par(mfrow = c(1, 1))
 
 ```
+
+
+```{r}
+par(mfrow = c(1, 2))
+plot(pca_fit$x[,1], pca_fit$x[,2], pch = 20, cex=.3,main = "PC1 vs PC2 Scores",
+     xlab = "PC1", ylab = "PC2")
+plot(pca_fit$x[,1], pca_fit$x[,3], pch = 20, cex=.3, main = "PC1 vs PC3 Scores",
+     xlab = "PC1", ylab = "PC3")
+par(mfrow = c(1, 1))
+
+# PC score plot
+plot(pca_fit$x[,1], pca_fit$x[,2], pch = 20, cex=.3, col = "black",
+     main = "PC1 vs PC2 (Scores + Loadings)", xlab = "PC1", ylab = "PC2")
+
+
+```
+
 
 
