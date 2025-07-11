@@ -995,3 +995,37 @@ for (method_name in names(methods)) {
 ```
 
 
+
+```{r fig.width=14, fig.height=14, out.width='100%'}
+# --- Product of lambdas vs correlation (λₚλᵣ vs C_pr) for all methods, K=1 ---
+methods <- list(
+  "MoM-Trio"      = list(lambda = lambda_trio),
+  "MGSP"          = list(lambda = lambda_mgsp),
+  "Horseshoe"     = list(lambda = lambda_hs),
+  "Spike-and-Slab"= list(lambda = lambda_ssl)
+)
+
+C <- cor(Y)  # Empirical correlation matrix
+
+par(mfrow = c(2, 2))
+for (method_name in names(methods)) {
+  lambda <- as.numeric(methods[[method_name]]$lambda)
+  lambda_outer <- outer(lambda, lambda)
+  plot(
+    as.vector(lambda_outer), as.vector(C),
+    xlab = expression(lambda[p]*lambda[r]),
+    ylab = "Empirical correlation C[pr]",
+    main = paste0(method_name, ": λpλr vs C[pr]"),
+    pch = 20, col = rgb(0.2,0.5,0.8,0.5)
+  )
+  abline(0,1,col="red",lwd=2)
+  legend("topleft",
+         legend = sprintf("Corr = %.3f", cor(as.vector(lambda_outer), as.vector(C))),
+         bty = "n")
+}
+par(mfrow = c(1, 1))
+
+```
+
+
+
